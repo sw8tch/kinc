@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void (*a2_callback)(kinc_a2_buffer_t *buffer, int samples, void *userdata) = NULL;
-static void *a2_userdata = NULL;
 static kinc_a2_buffer_t a2_buffer;
 
 static SLObjectItf engineObject;
@@ -20,25 +18,26 @@ static SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
 static int16_t tempBuffer[AUDIO_BUFFER_SIZE];
 
 static void copySample(void *buffer) {
-	float value = *(float *)&a2_buffer.data[a2_buffer.read_location];
-	a2_buffer.read_location += 4;
-	if (a2_buffer.read_location >= a2_buffer.data_size)
+	float left_value = *(float *)&a2_buffer.channels[0][a2_buffer.read_location];
+	float right_value = *(float *)&a2_buffer.channels[1][a2_buffer.read_location];
+	a2_buffer.read_location += 1;
+	if (a2_buffer.read_location >= a2_buffer.data_size) {
 		a2_buffer.read_location = 0;
-	*(int16_t *)buffer = (int16_t)(value * 32767);
+	}
+	((int16_t *)buffer)[0] = (int16_t)(left_value * 32767);
+	((int16_t *)buffer)[1] = (int16_t)(right_value * 32767);
 }
 
 static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf caller, void *context) {
-	if (a2_callback != NULL) {
-		a2_callback(&a2_buffer, AUDIO_BUFFER_SIZE, a2_userdata);
-		for (int i = 0; i < AUDIO_BUFFER_SIZE; i++) {
+	if (kinc_a2_internal_callback(&a2_buffer, AUDIO_BUFFER_SIZE / 2)) {
+		for (int i = 0; i < AUDIO_BUFFER_SIZE; i += 2) {
 			copySample(&tempBuffer[i]);
 		}
-		SLresult result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, tempBuffer, AUDIO_BUFFER_SIZE * 2);
 	}
 	else {
 		memset(tempBuffer, 0, sizeof(tempBuffer));
-		SLresult result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, tempBuffer, AUDIO_BUFFER_SIZE * 2);
 	}
+	SLresult result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, tempBuffer, AUDIO_BUFFER_SIZE * 2);
 }
 
 static bool initialized = false;
@@ -48,13 +47,15 @@ void kinc_a2_init() {
 		return;
 	}
 
+	kinc_a2_internal_init();
 	initialized = true;
 
-	kinc_a2_samples_per_second = 44100;
 	a2_buffer.read_location = 0;
 	a2_buffer.write_location = 0;
 	a2_buffer.data_size = 128 * 1024;
-	a2_buffer.data = malloc(a2_buffer.data_size);
+	a2_buffer.channel_count = 2;
+	a2_buffer.channels[0] = (float*)malloc(a2_buffer.data_size * sizeof(float));
+	a2_buffer.channels[1] = (float*)malloc(a2_buffer.data_size * sizeof(float));
 
 	SLresult result;
 	result = slCreateEngine(&engineObject, 0, NULL, 0, NULL, NULL);
@@ -94,14 +95,16 @@ void kinc_a2_init() {
 }
 
 void pauseAudio() {
-	if (bqPlayerPlay == NULL)
+	if (bqPlayerPlay == NULL) {
 		return;
+	}
 	SLresult result = (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PAUSED);
 }
 
 void resumeAudio() {
-	if (bqPlayerPlay == NULL)
+	if (bqPlayerPlay == NULL) {
 		return;
+	}
 	SLresult result = (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PLAYING);
 }
 
@@ -125,7 +128,6 @@ void kinc_a2_shutdown() {
 	}
 }
 
-void kinc_a2_set_callback(void (*kinc_a2_audio_callback)(kinc_a2_buffer_t *buffer, int samples, void *userdata), void *userdata) {
-	a2_callback = kinc_a2_audio_callback;
-	a2_userdata = userdata;
+uint32_t kinc_a2_samples_per_second(void) {
+	return 44100;
 }
