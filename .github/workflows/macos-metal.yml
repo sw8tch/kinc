@@ -11,13 +11,13 @@ on:
 jobs:
   build:
 
-    runs-on: macOS-latest
+    runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Get Submodules
       run: ./get_dlc
     - name: Compile
       run: ./make -g metal --kinc . --from Tests/Empty --compile
     - name: Compile and Run Test 2 (SIMD)
-      run: ./make --kinc . --from Tests/SIMD --compile --run
+      run: ./make --kinc . --from Tests/SIMD --run
