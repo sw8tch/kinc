@@ -55,6 +55,8 @@ KINC_FUNC void kinc_gamepad_rumble(int gamepad, float left, float right);
 
 void kinc_internal_gamepad_trigger_axis(int gamepad, int axis, float value);
 void kinc_internal_gamepad_trigger_button(int gamepad, int button, float value);
+int64_t kinc_internal_gamepad_util_analogToDigital(float xaxis, float yaxis);
+
 
 #ifdef KINC_IMPLEMENTATION_INPUT
 #define KINC_IMPLEMENTATION
@@ -91,6 +93,23 @@ void kinc_internal_gamepad_trigger_button(int gamepad, int button, float value) 
 		gamepad_button_callback(gamepad, button, value, gamepad_button_callback_userdata);
 	}
 }
+
+int64_t kinc_internal_gamepad_util_analogToDigital(float xaxis, float yaxis) {
+	int64_t out = 0x0000;
+	if (xaxis <= -0.5) {
+		out |= 0x0004;
+	}
+	if (xaxis >= 0.5) {
+		out |= 0x0008;
+	}
+	if (yaxis <= -0.5) {
+		out |= 0x0002;
+	}
+	if (yaxis >= 0.5) {
+		out |= 0x0001;
+	}
+	return out;
+};
 
 #endif
 

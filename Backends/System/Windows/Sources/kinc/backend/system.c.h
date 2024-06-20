@@ -33,6 +33,10 @@
 __itt_domain *kinc_itt_domain;
 #endif
 
+#ifdef KINC_USE_STEAM
+#include <kinc/steam/steam.h>
+#endif
+
 #ifdef KORE_G4ONG5
 #define Graphics Graphics5
 #elif KORE_G4
@@ -1121,6 +1125,26 @@ bool kinc_internal_handle_messages() {
 		DispatchMessageW(&message);
 	}
 
+#if defined(KINC_USE_STEAM)
+	kinc_steam_update();
+	//m_ControllerActionSetHandles[0].
+    for (DWORD i = 0; i < 0; ++i) //KINC_DINPUT_MAX_COUNT
+    {
+		float newbuttons[16];
+		newbuttons[0] = (kinc_steam_getDigitalStatus(0)) ? 1.0f : 0.0f;
+		newbuttons[1] = (kinc_steam_getDigitalStatus(1)) ? 1.0f : 0.0f;
+		for (int i2 = 0; i2 < 16; ++i2) {
+			if (buttons[i * 16 + i2] != newbuttons[i2]) {
+				kinc_internal_gamepad_trigger_button(i, i2, newbuttons[i2]);
+				buttons[i * 16 + i2] = newbuttons[i2];
+			}
+		}
+    }
+
+
+#else
+
+
 	if (InputGetState != NULL && (detectGamepad || gamepadFound)) {
 		detectGamepad = false;
 		for (DWORD i = 0; i < KINC_DINPUT_MAX_COUNT; ++i) {
@@ -1144,6 +1168,9 @@ bool kinc_internal_handle_messages() {
 						axes[i * 6 + i2] = newaxes[i2];
 					}
 				}
+
+				WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
+
 				float newbuttons[16];
 				newbuttons[0] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? 1.0f : 0.0f;
 				newbuttons[1] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? 1.0f : 0.0f;
@@ -1157,10 +1184,18 @@ bool kinc_internal_handle_messages() {
 				newbuttons[9] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? 1.0f : 0.0f;
 				newbuttons[10] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1.0f : 0.0f;
 				newbuttons[11] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1.0f : 0.0f;
+				/*
 				newbuttons[12] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1.0f : 0.0f;
 				newbuttons[13] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1.0f : 0.0f;
 				newbuttons[14] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1.0f : 0.0f;
 				newbuttons[15] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1.0f : 0.0f;
+				*/
+				newbuttons[12] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP) ) ? 1.0f : 0.0f;
+				newbuttons[13] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
+				newbuttons[14] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
+				newbuttons[15] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_RIGHT)) ? 1.0f : 0.0f;
+
+
 				for (int i2 = 0; i2 < 16; ++i2) {
 					if (buttons[i * 16 + i2] != newbuttons[i2]) {
 						kinc_internal_gamepad_trigger_button(i, i2, newbuttons[i2]);
@@ -1175,7 +1210,7 @@ bool kinc_internal_handle_messages() {
 			}
 		}
 	}
-
+#endif
 	return true;
 }
 
@@ -1372,6 +1407,8 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	kinc_itt_domain = __itt_domain_create(name);
 #endif
 
+
+
 	// Pen functions are only in Windows 8 and later, so load them dynamically
 	HMODULE user32 = LoadLibraryA("user32.dll");
 	MyGetPointerInfo = (GetPointerInfoType)GetProcAddress(user32, "GetPointerInfo");
@@ -1389,6 +1426,10 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	}
 
 	kinc_display_init();
+
+#ifdef KINC_USE_STEAM
+	kinc_steam_init();
+#endif
 
 	QueryPerformanceCounter(&startCount);
 	QueryPerformanceFrequency(&frequency);

@@ -42,6 +42,10 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>
-
 #include "VrInterface_SteamVR.cpp.h"
+
+#if defined(KINC_USE_STEAM)
+#include "steamInterface.cpp.h"
+#endif
+
 #include "video.cpp.h"
