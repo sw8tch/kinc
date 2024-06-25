@@ -15,7 +15,8 @@
 
     // Achievement array which will hold data about the achievements and their state
     Achievement_t g_Achievements[] = {
-        _ACH_ID(ACH_Finish_Game, "WinGame"),
+        _ACH_ID(ACH_Finish_Game, "Finish Game"),
+        _ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
     };
 
     InputDigitalActionHandle_t m_ControllerDigitalActionHandles[16];
@@ -32,11 +33,14 @@
 	}
 	SteamInput()->Init(false);
 	const char *pchName = "Normal Mode";
+	//kinc_steam_richpresence_update("gamename",pchName);
+	//kinc_steam_richpresence_update("steam_display", "#StatusInGame");
+/*
 	SteamFriends()->SetRichPresence("gamename", pchName);
 	SteamFriends()->SetRichPresence("steam_display", "#StatusInGame");
-
+*/
 	//SteamFriends()->SetPersonaName("OMG ! !  !");
-	g_SteamAchievements = new CSteamAchievements(g_Achievements, 1);
+	g_SteamAchievements = new CSteamAchievements(g_Achievements, 2);
 
 	return 1;
 }
@@ -144,4 +148,13 @@ void kinc_steam_set_achievement(const char *achievementID)
 	}
 
 	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
+}
+
+void kinc_steam_richpresence_update(const char* key, const char* value)
+{
+	SteamFriends()->SetRichPresence(key,value);
+}
+void kinc_steam_richpresence_clear()
+{
+	SteamFriends()->ClearRichPresence();
 }
