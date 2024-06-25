@@ -1,15 +1,27 @@
-//#if defined(KINC_USE_STEAM)
-
 #include "kinc/steam/steam.h"
-
+#include "kinc/steam/StatsAndAchievements.h"
+#include "kinc/log.h"
+#include <XInput.h>
 #include "steam/isteaminput.h"
 #include "steam/steam_api.h"
 #include "steam/isteamfriends.h"
+#include "steam/isteamuser.h"
+#include "steam/isteamuserstats.h"
+#include "steam/isteamutils.h"
 
+#define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
 
+    CSteamAchievements *g_SteamAchievements = NULL;
 
-    InputDigitalActionHandle_t m_ControllerDigitalActionHandles[2];
-	// A handle to the currently active Steam Controller. 
+    // Achievement array which will hold data about the achievements and their state
+    Achievement_t g_Achievements[] = {
+        _ACH_ID(ACH_Finish_Game, "WinGame"),
+    };
+
+    InputDigitalActionHandle_t m_ControllerDigitalActionHandles[16];
+    InputAnalogActionHandle_t m_ControllerAnalogActionHandles[6];
+
+	// A handle to the currently active Steam Controller.
 	InputHandle_t m_ActiveControllerHandle;
     ControllerHandle_t pHandles[8];
     bool kinc_steam_init()
@@ -19,23 +31,57 @@
 		return 0;
 	}
 	SteamInput()->Init(false);
-	SteamFriends()->SetRichPresence("StatusInGame", "LOL ! ! !");
-	
+	const char *pchName = "Normal Mode";
+	SteamFriends()->SetRichPresence("gamename", pchName);
+	SteamFriends()->SetRichPresence("steam_display", "#StatusInGame");
+
 	//SteamFriends()->SetPersonaName("OMG ! !  !");
-	m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("Action_A");
-	m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("Action_B");
+	g_SteamAchievements = new CSteamAchievements(g_Achievements, 1);
+
 	return 1;
 }
+
+void kinc_steam_actions_register() {
+	m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
+	m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("ActionB");
+	m_ControllerDigitalActionHandles[2] = SteamInput()->GetDigitalActionHandle("ActionX");
+	m_ControllerDigitalActionHandles[3] = SteamInput()->GetDigitalActionHandle("ActionY");
+	m_ControllerDigitalActionHandles[4] = SteamInput()->GetDigitalActionHandle("LShoulder");
+	m_ControllerDigitalActionHandles[5] = SteamInput()->GetDigitalActionHandle("RShoulder");
+	m_ControllerDigitalActionHandles[6] = SteamInput()->GetDigitalActionHandle("LTrig");
+	m_ControllerDigitalActionHandles[7] = SteamInput()->GetDigitalActionHandle("RTrig");
+	m_ControllerDigitalActionHandles[8] = SteamInput()->GetDigitalActionHandle("select");
+	m_ControllerDigitalActionHandles[9] = SteamInput()->GetDigitalActionHandle("pause_menu");
+	m_ControllerDigitalActionHandles[10] = SteamInput()->GetDigitalActionHandle("LThumb");
+	m_ControllerDigitalActionHandles[11] = SteamInput()->GetDigitalActionHandle("RThumb");
+	m_ControllerDigitalActionHandles[12] = SteamInput()->GetDigitalActionHandle("DPadUp");
+	m_ControllerDigitalActionHandles[13] = SteamInput()->GetDigitalActionHandle("DPadDown");
+	m_ControllerDigitalActionHandles[14] = SteamInput()->GetDigitalActionHandle("DPadLeft");
+	m_ControllerDigitalActionHandles[15] = SteamInput()->GetDigitalActionHandle("DPadRight");
+}
+
+void kinc_steam_axis_register() {
+	m_ControllerAnalogActionHandles[0] = SteamInput()->GetAnalogActionHandle("Move");
+	m_ControllerAnalogActionHandles[1] = SteamInput()->GetAnalogActionHandle("look");
+	m_ControllerAnalogActionHandles[2] = SteamInput()->GetAnalogActionHandle("leftTrigger");
+	m_ControllerAnalogActionHandles[3] = SteamInput()->GetAnalogActionHandle("rightTrigger");
+}
+
 void kinc_steam_inputaction()
 {
-    //m_ControllerActionSetHandles[0] = SteamInput()->GetDigitalActionHandle( "#Action_A" );
-	//m_ControllerActionSetHandles[1] = SteamInput()->GetDigitalActionHandle( "#Action_B" );
+	//m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
+	//m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("ActionB");
 }
 
 void kinc_steam_update()
 {
     kinc_steam_input_findcontroller();
+	kinc_steam_actions_register();
+	kinc_steam_axis_register();
+    InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
+    SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
     SteamAPI_RunCallbacks();
+
 }
 
 //-----------------------------------------------------------------------------
@@ -49,6 +95,23 @@ bool kinc_steam_getDigitalStatus(int num) {
 		return digitalData.bState;
 
 	return false;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+// Purpose: Get the current x,y state of the analog action. Examples of an analog action are a virtual joystick on the trackpad or the real joystick.
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+void kinc_steam_getAnalogStatus(int num, float *x, float *y) {
+	ControllerAnalogActionData_t analogData = SteamInput()->GetAnalogActionData(m_ActiveControllerHandle, m_ControllerAnalogActionHandles[num]);
+
+	// Actions are only 'active' when they're assigned to a control in an action set, and that action set is active.
+	if (analogData.bActive) {
+		*x = analogData.x;
+		*y = analogData.y;
+	}
+	else {
+		*x = 0.0f;
+		*y = 0.0f;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -70,4 +133,15 @@ void kinc_steam_input_findcontroller( )
 		m_ActiveControllerHandle = pHandles[0];
 	}
 }
-//#endif
+
+void kinc_steam_set_achievement(const char *achievementID)
+{
+	kinc_log(KINC_LOG_LEVEL_INFO, "\nKincSteam : Called achievement %s", achievementID);
+	// Have we received a call back from Steam yet?
+	if (true) {
+		SteamUserStats()->SetAchievement(achievementID);
+		SteamUserStats()->StoreStats();
+	}
+
+	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
+}
