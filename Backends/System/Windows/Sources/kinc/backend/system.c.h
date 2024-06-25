@@ -709,8 +709,8 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 	return DefWindowProcW(hWnd, msg, wParam, lParam);
 }
 
-static float axes[12 * 6];
-static float buttons[12 * 16];
+static float axes[KINC_DINPUT_MAX_COUNT * 6];
+static float buttons[KINC_DINPUT_MAX_COUNT * 16];
 
 typedef DWORD(WINAPI *XInputGetStateType)(DWORD dwUserIndex, XINPUT_STATE *pState);
 typedef DWORD(WINAPI *XInputSetStateType)(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration);
@@ -1128,11 +1128,31 @@ bool kinc_internal_handle_messages() {
 #if defined(KINC_USE_STEAM)
 	kinc_steam_update();
 	//m_ControllerActionSetHandles[0].
-    for (DWORD i = 0; i < 0; ++i) //KINC_DINPUT_MAX_COUNT
+    for (DWORD i = 0; i < 1; ++i) //KINC_DINPUT_MAX_COUNT
     {
+
+        float newaxes[6];
+        for (int action = 0; action < 3; ++action)
+        {
+			float x;
+			float y;
+			kinc_steam_getAnalogStatus(action, &x, &y);
+			newaxes[action*2] = x;
+			newaxes[action*2+1] = y;
+        }
+		for (int i2 = 0; i2 < 6; ++i2) {
+			if (axes[i * 6 + i2] != newaxes[i2]) {
+				kinc_internal_gamepad_trigger_axis(i, i2, newaxes[i2]);
+				axes[i * 6 + i2] = newaxes[i2];
+			}
+		}
+
 		float newbuttons[16];
-		newbuttons[0] = (kinc_steam_getDigitalStatus(0)) ? 1.0f : 0.0f;
-		newbuttons[1] = (kinc_steam_getDigitalStatus(1)) ? 1.0f : 0.0f;
+        for (int action = 0; action < 16; ++action)
+        {
+			newbuttons[action] = (kinc_steam_getDigitalStatus(action)) ? 1.0f : 0.0f;
+        }
+
 		for (int i2 = 0; i2 < 16; ++i2) {
 			if (buttons[i * 16 + i2] != newbuttons[i2]) {
 				kinc_internal_gamepad_trigger_button(i, i2, newbuttons[i2]);
@@ -1429,6 +1449,7 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 
 #ifdef KINC_USE_STEAM
 	kinc_steam_init();
+	//kinc_steam_actions_register();
 #endif
 
 	QueryPerformanceCounter(&startCount);
