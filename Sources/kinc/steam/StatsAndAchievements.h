@@ -9,6 +9,7 @@
 enum EAchievements
 {
 	ACH_Finish_Game = 0,
+	ACH_Finish_Game_Full = 1,
 };
 
 struct Achievement_t

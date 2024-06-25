@@ -39,7 +39,7 @@ void CSteamAchievements::EvaluateAchievement(Achievement_t &achievement) {
 	switch ( achievement.m_eAchievementID )
 	{
 	case ACH_Finish_Game:
-		if ( true )
+		if ( !achievement.m_bAchieved )
 		{
 			UnlockAchievement( achievement );
 		}
