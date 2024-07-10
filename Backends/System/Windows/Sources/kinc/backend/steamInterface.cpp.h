@@ -79,6 +79,10 @@ void kinc_steam_inputaction()
 
 void kinc_steam_update()
 {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return;
+
     kinc_steam_input_findcontroller();
 	kinc_steam_actions_register();
 	kinc_steam_axis_register();
@@ -92,6 +96,10 @@ void kinc_steam_update()
 // Purpose: Find out if a controller event is currently active
 //-----------------------------------------------------------------------------
 bool kinc_steam_getDigitalStatus(int num) {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return false;
+
 	ControllerDigitalActionData_t digitalData = SteamInput()->GetDigitalActionData(m_ActiveControllerHandle, m_ControllerDigitalActionHandles[num]);
 
 	// Actions are only 'active' when they're assigned to a control in an action set, and that action set is active.
@@ -105,6 +113,10 @@ bool kinc_steam_getDigitalStatus(int num) {
 // Purpose: Get the current x,y state of the analog action. Examples of an analog action are a virtual joystick on the trackpad or the real joystick.
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 void kinc_steam_getAnalogStatus(int num, float *x, float *y) {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return;
+
 	ControllerAnalogActionData_t analogData = SteamInput()->GetAnalogActionData(m_ActiveControllerHandle, m_ControllerAnalogActionHandles[num]);
 
 	// Actions are only 'active' when they're assigned to a control in an action set, and that action set is active.
@@ -128,6 +140,9 @@ void kinc_steam_input_findcontroller( )
 	// a given controller, even across power cycles.
 
 	// See how many Steam Controllers are active. 
+	ISteamInput* steamInput = SteamInput();
+	if (!steamInput)
+		return;
 	
 	int nNumActive = SteamInput()->GetConnectedControllers( pHandles );
 
