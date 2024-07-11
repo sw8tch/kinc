@@ -11,7 +11,7 @@ namespace Kore {
 		IndexBufferImpl(int count);
 		void unset();
 
-#if defined(KORE_ANDROID) || defined(KORE_PI)
+#if defined(KINC_ANDROID) || defined(KINC_RASPBERRY_PI)
 		u16 *shortData;
 #endif
 		int *data;

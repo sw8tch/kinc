@@ -161,7 +161,7 @@ void kinc_g4_internal_init_window(int windowId, int depthBufferBits, int stencil
 		return;
 	}
 
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 	// TODO (DK) convert depthBufferBits + stencilBufferBits to: d3dpp.AutoDepthStencilFormat = D3DFMT_D24X8;
 	D3DPRESENT_PARAMETERS d3dpp;
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
@@ -201,7 +201,7 @@ void kinc_g4_internal_init_window(int windowId, int depthBufferBits, int stencil
 		d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &device);
 		// d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &device);
 
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 	// if (System::hasShowWindowFlag(/*windowId*/)) {
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 	UpdateWindow(hWnd);
@@ -210,7 +210,7 @@ void kinc_g4_internal_init_window(int windowId, int depthBufferBits, int stencil
 
 	initDeviceStates();
 
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 	if (fullscreen) {
 		// hz = d3dpp.FullScreen_RefreshRateInHz;
 		D3DDISPLAYMODE mode;
@@ -493,6 +493,8 @@ void kinc_g4_set_blend_constant(float r, float g, float b, float a) {
 	device->SetRenderState(D3DRS_BLENDFACTOR, D3DCOLOR_RGBA((int)(r * 255), (int)(g * 255), (int)(b * 255), (int)(a * 255)));
 }
 
+#ifndef KINC_KONG
+
 void kinc_g4_set_bool(kinc_g4_constant_location_t position, bool value) {
 	if (position.impl.shaderType == -1)
 		return;
@@ -708,6 +710,8 @@ void kinc_g4_set_matrix3(kinc_g4_constant_location_t location, kinc_matrix3x3_t 
 	else
 		device->SetPixelShaderConstantF(location.impl.reg.regindex, floats, 3);
 }
+
+#endif
 
 void kinc_g4_set_vertex_buffers(kinc_g4_vertex_buffer_t **buffers, int count) {
 	for (int i = 0; i < count; ++i) {

@@ -1,4 +1,4 @@
-name: Emscripten (WebGL)
+name: Web Assembly
 
 on:
   push:
@@ -21,7 +21,5 @@ jobs:
       run: sudo apt install ninja-build --yes --quiet
     - name: Get Submodules
       run: ./get_dlc
-    - name: Compile (kmake)
-      run: ./make emscripten --kinc . --from Tests/Empty
-    - name: Compile (emscripten)
-      run: git clone https://github.com/emscripten-core/emsdk.git && cd emsdk && ./emsdk install latest && ./emsdk activate latest && source ./emsdk_env.sh && cd ../build/Release && ninja
+    - name: Compile
+      run: ./make wasm --kinc . --from Tests/Empty --compile

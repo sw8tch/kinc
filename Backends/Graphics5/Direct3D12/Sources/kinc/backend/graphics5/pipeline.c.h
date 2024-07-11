@@ -30,16 +30,20 @@ void kinc_g5_internal_setConstants(kinc_g5_command_list_t *commandList, kinc_g5_
 	}
 	*/
 
-#ifdef KORE_DXC
+#ifdef KINC_DXC
 	// commandList->SetGraphicsRootSignature(pipeline->impl.rootSignature);
 	commandList->impl._commandList->SetGraphicsRootSignature(globalRootSignature);
 #else
 	commandList->impl._commandList->SetGraphicsRootSignature(globalRootSignature);
 #endif
 
+#ifndef KINC_KONG
 	if (pipeline->impl.textures > 0) {
+#endif
 		kinc_g5_internal_set_textures(commandList);
+#ifndef KINC_KONG
 	}
+#endif
 }
 
 void kinc_g5_internal_set_compute_constants(kinc_g5_command_list_t *commandList) {
@@ -94,6 +98,8 @@ void kinc_g5_pipeline_destroy(kinc_g5_pipeline_t *pipe) {
 
 // context->IASetInputLayout(inputLayout);
 //}
+
+#ifndef KINC_KONG
 
 #define MAX_SHADER_THING 32
 
@@ -195,6 +201,8 @@ kinc_g5_texture_unit_t kinc_g5_pipeline_get_texture_unit(kinc_g5_pipeline_t *pip
 	return unit;
 }
 
+#endif
+
 static D3D12_BLEND convert_blend_factor(kinc_g5_blending_factor_t factor) {
 	switch (factor) {
 	case KINC_G5_BLEND_ONE:
@@ -293,7 +301,7 @@ static DXGI_FORMAT convert_format(kinc_g5_render_target_format_t format) {
 		return DXGI_FORMAT_R8_UNORM;
 	case KINC_G5_RENDER_TARGET_FORMAT_32BIT:
 	default:
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
 #else
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -459,23 +467,27 @@ void kinc_g5_pipeline_compile(kinc_g5_pipeline_t *pipe) {
 	}
 
 	HRESULT hr = S_OK;
-#ifdef KORE_DXC
+#ifdef KINC_DXC
 	// hr = device->CreateRootSignature(0, pipe->vertexShader->impl.data, pipe->vertexShader->impl.length, IID_GRAPHICS_PPV_ARGS(&pipe->impl.rootSignature));
 	if (hr != S_OK) {
 		kinc_log(KINC_LOG_LEVEL_WARNING, "Could not create root signature.");
 	}
+#ifndef KINC_KONG
 	pipe->impl.vertexConstantsSize = pipe->vertexShader->impl.constantsSize;
 	pipe->impl.fragmentConstantsSize = pipe->fragmentShader->impl.constantsSize;
 #endif
+#endif
 
+#ifndef KINC_KONG
 	pipe->impl.textures = pipe->fragmentShader->impl.texturesCount;
+#endif
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {0};
 	psoDesc.VS.BytecodeLength = pipe->vertexShader->impl.length;
 	psoDesc.VS.pShaderBytecode = pipe->vertexShader->impl.data;
 	psoDesc.PS.BytecodeLength = pipe->fragmentShader->impl.length;
 	psoDesc.PS.pShaderBytecode = pipe->fragmentShader->impl.data;
-#ifdef KORE_DXC
+#ifdef KINC_DXC
 	// psoDesc.pRootSignature = pipe->impl.rootSignature;
 	psoDesc.pRootSignature = globalRootSignature;
 #else

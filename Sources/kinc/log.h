@@ -67,12 +67,12 @@ KINC_FUNC void kinc_log_args(kinc_log_level_t log_level, const char *format, va_
 #undef KINC_IMPLEMENTATION
 #endif
 
-#ifdef KORE_MICROSOFT
+#ifdef KINC_MICROSOFT
 #include <kinc/backend/MiniWindows.h>
 #include <kinc/backend/SystemMicrosoft.h>
 #endif
 
-#ifdef KORE_ANDROID
+#ifdef KINC_ANDROID
 #include <android/log.h>
 #endif
 
@@ -86,13 +86,29 @@ void kinc_log(kinc_log_level_t level, const char *format, ...) {
 #define UTF8
 
 void kinc_log_args(kinc_log_level_t level, const char *format, va_list args) {
-#ifdef KORE_MICROSOFT
+#ifdef KINC_ANDROID
+	va_list args_android_copy;
+	va_copy(args_android_copy, args);
+	switch (level) {
+	case KINC_LOG_LEVEL_INFO:
+		__android_log_vprint(ANDROID_LOG_INFO, "Kinc", format, args_android_copy);
+		break;
+	case KINC_LOG_LEVEL_WARNING:
+		__android_log_vprint(ANDROID_LOG_WARN, "Kinc", format, args_android_copy);
+		break;
+	case KINC_LOG_LEVEL_ERROR:
+		__android_log_vprint(ANDROID_LOG_ERROR, "Kinc", format, args_android_copy);
+		break;
+	}
+	va_end(args_android_copy);
+#endif
+#ifdef KINC_MICROSOFT
 #ifdef UTF8
 	wchar_t buffer[4096];
 	kinc_microsoft_format(format, args, buffer);
 	wcscat(buffer, L"\r\n");
 	OutputDebugStringW(buffer);
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 	DWORD written;
 	WriteConsoleW(GetStdHandle(level == KINC_LOG_LEVEL_INFO ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), buffer, (DWORD)wcslen(buffer), &written, NULL);
 #endif
@@ -101,7 +117,7 @@ void kinc_log_args(kinc_log_level_t level, const char *format, va_list args) {
 	vsnprintf(buffer, 4090, format, args);
 	strcat(buffer, "\r\n");
 	OutputDebugStringA(buffer);
-#ifdef KORE_WINDOWS
+#ifdef KINC_WINDOWS
 	DWORD written;
 	WriteConsoleA(GetStdHandle(level == KINC_LOG_LEVEL_INFO ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), buffer, (DWORD)strlen(buffer), &written, NULL);
 #endif
@@ -111,20 +127,6 @@ void kinc_log_args(kinc_log_level_t level, const char *format, va_list args) {
 	vsnprintf(buffer, 4090, format, args);
 	strcat(buffer, "\n");
 	fprintf(level == KINC_LOG_LEVEL_INFO ? stdout : stderr, "%s", buffer);
-#endif
-
-#ifdef KORE_ANDROID
-	switch (level) {
-	case KINC_LOG_LEVEL_INFO:
-		__android_log_vprint(ANDROID_LOG_INFO, "Kinc", format, args);
-		break;
-	case KINC_LOG_LEVEL_WARNING:
-		__android_log_vprint(ANDROID_LOG_WARN, "Kinc", format, args);
-		break;
-	case KINC_LOG_LEVEL_ERROR:
-		__android_log_vprint(ANDROID_LOG_ERROR, "Kinc", format, args);
-		break;
-	}
 #endif
 }
 

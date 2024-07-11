@@ -9,15 +9,13 @@
 #include <AudioClient.h>
 #include <Windows.h>
 #include <initguid.h>
-#ifdef KORE_WINRT
+#ifdef KINC_WINDOWSAPP
 #include <mfapi.h>
 #endif
 #include <mmdeviceapi.h>
 #include <wrl/implements.h>
 
-using namespace Kore;
-
-#ifdef KORE_WINRT
+#ifdef KINC_WINDOWSAPP
 using namespace ::Microsoft::WRL;
 using namespace Windows::Media::Devices;
 using namespace Windows::Storage::Streams;
@@ -57,7 +55,7 @@ namespace {
 	bool initDefaultDevice();
 	void audioThread(LPVOID);
 
-#ifdef KORE_WINRT
+#ifdef KINC_WINDOWSAPP
 	class AudioRenderer : public RuntimeClass<RuntimeClassFlags<ClassicCom>, FtmBase, IActivateAudioInterfaceCompletionHandler> {
 	public:
 		STDMETHOD(ActivateCompleted)(IActivateAudioInterfaceAsyncOperation *operation) {
@@ -77,7 +75,7 @@ namespace {
 #endif
 
 	bool initDefaultDevice() {
-#ifdef KORE_WINRT
+#ifdef KINC_WINDOWSAPP
 		HRESULT hr = S_OK;
 #else
 		if (renderClient != NULL) {
@@ -250,7 +248,7 @@ namespace {
 
 } // namespace
 
-#ifndef KORE_WINRT
+#ifndef KINC_WINDOWSAPP
 extern "C" void kinc_windows_co_initialize(void);
 #endif
 
@@ -274,7 +272,7 @@ void kinc_a2_init() {
 	audioProcessingDoneEvent = CreateEvent(0, FALSE, FALSE, 0);
 	kinc_affirm(audioProcessingDoneEvent != 0);
 
-#ifdef KORE_WINRT
+#ifdef KINC_WINDOWSAPP
 	renderer = Make<AudioRenderer>();
 
 	IActivateAudioInterfaceAsyncOperation *asyncOp;

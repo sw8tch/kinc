@@ -21,7 +21,7 @@ struct kinc_g4_pipeline;
 struct kinc_g4_render_target;
 struct kinc_g4_texture;
 struct kinc_g4_texture_array;
-#ifdef KORE_OPENGL
+#ifdef KINC_OPENGL
 struct kinc_shader_storage_buffer;
 #endif
 #ifdef KINC_KONG
@@ -189,6 +189,8 @@ KINC_FUNC void kinc_g4_set_blend_constant(float r, float g, float b, float a);
 KINC_FUNC void kinc_g4_set_constant_buffer(uint32_t id, struct kinc_g4_constant_buffer *buffer);
 #endif
 
+#ifndef KINC_KONG
+
 /// <summary>
 /// Assigns an integer to a constant/uniform in the currently set pipeline.
 /// </summary>
@@ -293,6 +295,8 @@ KINC_FUNC void kinc_g4_set_matrix3(kinc_g4_constant_location_t location, kinc_ma
 /// <param name="location">The location of the constant/uniform to assign the value to</param>
 /// <param name="value">The value to assign to the constant/uniform</param>
 KINC_FUNC void kinc_g4_set_matrix4(kinc_g4_constant_location_t location, kinc_matrix4x4_t *value);
+
+#endif
 
 /// <summary>
 /// Set the texture-sampling-mode for upscaled textures.
@@ -424,7 +428,7 @@ KINC_FUNC int kinc_g4_antialiasing_samples(void);
 /// <param name="samples">The number of samples</param>
 KINC_FUNC void kinc_g4_set_antialiasing_samples(int samples);
 
-#ifdef KORE_OPENGL
+#ifdef KINC_OPENGL
 /// <summary>
 /// Old, hack thing, do not use.
 /// </summary>

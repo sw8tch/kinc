@@ -8,6 +8,7 @@ let heapi32 = null;
 let heapf32 = null;
 let mod = null;
 let instance = null;
+let audio_thread_started = false;
 
 function create_thread(func) {
 	console.log('Creating thread');
@@ -23,8 +24,10 @@ function create_thread(func) {
 async function start_audio_thread() {
 	const audioContext = new AudioContext();
 	await audioContext.audioWorklet.addModule('audio-thread.js');
-	const audioThreadNode = new AudioWorkletNode(audioContext, 'audio-thread');
-	audioThreadNode.port.postMessage({ mod, memory });
+	const audioThreadNode = new AudioWorkletNode(audioContext, 'audio-thread', { processorOptions: { mod, memory }});
+	audioThreadNode.port.onmessage = (message) => {
+		console.log(message.data);
+	};
 	audioThreadNode.connect(audioContext.destination);
 }
 
@@ -492,7 +495,10 @@ async function init() {
 	window.requestAnimationFrame(update);
 
 	kanvas.addEventListener('click', (event) => {
-		// start_audio_thread();
+		if (!audio_thread_started) {
+			start_audio_thread();
+			audio_thread_started = true;
+		}
 	});
 
 	kanvas.addEventListener('contextmenu', (event) => {

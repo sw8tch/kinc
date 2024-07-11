@@ -43,6 +43,7 @@ static bool activityJustResized = false;
 #include <kinc/log.h>
 
 #ifdef KINC_EGL
+
 EGLDisplay kinc_egl_get_display() {
 	return eglGetDisplay(EGL_DEFAULT_DISPLAY);
 }
@@ -57,11 +58,14 @@ EGLNativeWindowType kinc_egl_get_native_window(EGLDisplay display, EGLConfig con
 	}
 	return app->window;
 }
+
 #endif
 
-#ifdef KORE_VULKAN
+#ifdef KINC_VULKAN
+
 #include <vulkan/vulkan_android.h>
 #include <vulkan/vulkan_core.h>
+
 VkResult kinc_vulkan_create_surface(VkInstance instance, int window_index, VkSurfaceKHR *surface) {
 	assert(app->window != NULL);
 	VkAndroidSurfaceCreateInfoKHR createInfo = {};
@@ -88,25 +92,25 @@ VkBool32 kinc_vulkan_get_physical_device_presentation_support(VkPhysicalDevice p
 }
 #endif
 
-#ifndef KORE_VULKAN
+#ifndef KINC_VULKAN
 void kinc_egl_init_window(int window);
 void kinc_egl_destroy_window(int window);
 #endif
-#ifdef KORE_VULKAN
+#ifdef KINC_VULKAN
 void kinc_vulkan_init_window(int window);
 #endif
 
 static void initDisplay() {
-#ifndef KORE_VULKAN
+#ifndef KINC_VULKAN
 	kinc_egl_init_window(0);
 #endif
-#ifdef KORE_VULKAN
+#ifdef KINC_VULKAN
 	kinc_vulkan_init_window(0);
 #endif
 }
 
 static void termDisplay() {
-#ifndef KORE_VULKAN
+#ifndef KINC_VULKAN
 	kinc_egl_destroy_window(0);
 #endif
 }
@@ -956,7 +960,7 @@ const char *kinc_language() {
 	return str;
 }
 
-#ifdef KORE_VULKAN
+#ifdef KINC_VULKAN
 bool kinc_vulkan_internal_get_size(int *width, int *height);
 #endif
 
@@ -968,7 +972,7 @@ extern int kinc_egl_height(int window);
 int kinc_android_width() {
 #if defined(KINC_EGL)
 	return kinc_egl_width(0);
-#elif defined(KORE_VULKAN)
+#elif defined(KINC_VULKAN)
 	int width, height;
 	if (kinc_vulkan_internal_get_size(&width, &height)) {
 		return width;
@@ -981,7 +985,7 @@ int kinc_android_width() {
 int kinc_android_height() {
 #if defined(KINC_EGL)
 	return kinc_egl_height(0);
-#elif defined(KORE_VULKAN)
+#elif defined(KINC_VULKAN)
 	int width, height;
 	if (kinc_vulkan_internal_get_size(&width, &height)) {
 		return height;
@@ -1082,7 +1086,7 @@ bool kinc_internal_handle_messages(void) {
 		activityJustResized = false;
 		int32_t width = kinc_android_width();
 		int32_t height = kinc_android_height();
-#ifdef KORE_VULKAN
+#ifdef KINC_VULKAN
 		kinc_internal_resize(0, width, height);
 #endif
 		kinc_internal_call_resize_callback(0, width, height);
@@ -1127,7 +1131,7 @@ void kinc_login() {}
 void kinc_unlock_achievement(int id) {}
 
 bool kinc_gamepad_connected(int num) {
-	return true;
+	return num == 0;
 }
 
 void kinc_gamepad_rumble(int gamepad, float left, float right) {}
@@ -1150,7 +1154,7 @@ void android_main(struct android_app *application) {
 	application->onAppCmd = cmd;
 	application->onInputEvent = input;
 	activity->callbacks->onNativeWindowResized = resize;
-	// #ifndef KORE_VULKAN
+	// #ifndef KINC_VULKAN
 	// 	glContext = ndk_helper::GLContext::GetInstance();
 	// #endif
 	sensorManager = ASensorManager_getInstance();
@@ -1206,10 +1210,14 @@ int kinc_init(const char *name, int width, int height, struct kinc_window_option
 	kong_init();
 #endif
 
+	kinc_internal_gamepad_trigger_connect(0);
+
 	return 0;
 }
 
-void kinc_internal_shutdown(void) {}
+void kinc_internal_shutdown(void) {
+	kinc_internal_gamepad_trigger_disconnect(0);
+}
 
 const char *kinc_gamepad_vendor(int gamepad) {
 	return "Google";
@@ -1220,8 +1228,6 @@ const char *kinc_gamepad_product_name(int gamepad) {
 }
 
 #include <kinc/io/filereader.h>
-
-static char *externalFilesDir = NULL;
 
 #define CLASS_NAME "android/app/NativeActivity"
 
@@ -1243,60 +1249,52 @@ void initAndroidFileReader(void) {
 	jstring jPath = (*env)->CallObjectMethod(env, file, getPath);
 
 	const char *path = (*env)->GetStringUTFChars(env, jPath, NULL);
-	externalFilesDir = malloc(strlen(path) + 1);
+	char *externalFilesDir = malloc(strlen(path) + 1);
 	strcpy(externalFilesDir, path);
+	kinc_internal_set_files_location(externalFilesDir);
 
 	(*env)->ReleaseStringUTFChars(env, jPath, path);
 	(*env)->DeleteLocalRef(env, jPath);
 	(*activity->vm)->DetachCurrentThread(activity->vm);
 }
 
+static bool kinc_aasset_reader_close(kinc_file_reader_t *reader) {
+	AAsset_close((struct AAsset *)reader->data);
+	return true;
+}
+
+static size_t kinc_aasset_reader_read(kinc_file_reader_t *reader, void *data, size_t size) {
+	return AAsset_read((struct AAsset *)reader->data, data, size);
+}
+
+static size_t kinc_aasset_reader_pos(kinc_file_reader_t *reader) {
+	return (size_t)AAsset_seek((struct AAsset *)reader->data, 0, SEEK_CUR);
+}
+
+static bool kinc_aasset_reader_seek(kinc_file_reader_t *reader, size_t pos) {
+	AAsset_seek((struct AAsset *)reader->data, pos, SEEK_SET);
+	return true;
+}
+
+static bool kinc_aasset_reader_open(kinc_file_reader_t *reader, const char *filename, int type) {
+	if (type != KINC_FILE_TYPE_ASSET)
+		return false;
+	reader->data = AAssetManager_open(kinc_android_get_asset_manager(), filename, AASSET_MODE_RANDOM);
+	if (reader->data == NULL)
+		return false;
+	reader->size = AAsset_getLength((struct AAsset *)reader->data);
+	reader->close = kinc_aasset_reader_close;
+	reader->read = kinc_aasset_reader_read;
+	reader->pos = kinc_aasset_reader_pos;
+	reader->seek = kinc_aasset_reader_seek;
+	return true;
+}
+
 bool kinc_file_reader_open(kinc_file_reader_t *reader, const char *filename, int type) {
-	reader->pos = 0;
-	reader->file = NULL;
-	reader->asset = NULL;
-	if (type == KINC_FILE_TYPE_SAVE) {
-		char filepath[1001];
-
-		strcpy(filepath, kinc_internal_save_path());
-		strcat(filepath, filename);
-
-		reader->file = fopen(filepath, "rb");
-		if (reader->file == NULL) {
-			return false;
-		}
-		fseek(reader->file, 0, SEEK_END);
-		reader->size = ftell(reader->file);
-		fseek(reader->file, 0, SEEK_SET);
-		return true;
-	}
-	else {
-		char filepath[1001];
-		bool isAbsolute = filename[0] == '/';
-		if (isAbsolute) {
-			strcpy(filepath, filename);
-		}
-		else {
-			strcpy(filepath, externalFilesDir);
-			strcat(filepath, "/");
-			strcat(filepath, filename);
-		}
-
-		reader->file = fopen(filepath, "rb");
-		if (reader->file != NULL) {
-			fseek(reader->file, 0, SEEK_END);
-			reader->size = ftell(reader->file);
-			fseek(reader->file, 0, SEEK_SET);
-			return true;
-		}
-		else {
-			reader->asset = AAssetManager_open(kinc_android_get_asset_manager(), filename, AASSET_MODE_RANDOM);
-			if (reader->asset == NULL)
-				return false;
-			reader->size = AAsset_getLength(reader->asset);
-			return true;
-		}
-	}
+	memset(reader, 0, sizeof(*reader));
+	return kinc_internal_file_reader_callback(reader, filename, type) ||
+	       kinc_internal_file_reader_open(reader, filename, type) ||
+	       kinc_aasset_reader_open(reader, filename, type);
 }
 
 int kinc_cpu_cores(void) {

@@ -39,7 +39,7 @@ __itt_domain *kinc_itt_domain;
 
 #ifdef KORE_G4ONG5
 #define Graphics Graphics5
-#elif KORE_G4
+#elif KINC_G4
 #define Graphics Graphics4
 #else
 #define Graphics Graphics3
@@ -294,7 +294,7 @@ static wchar_t toUnicode(WPARAM wParam, LPARAM lParam) {
 	return buffer[0];
 }
 
-#if !defined(KORE_DIRECT3D9) && !defined(KORE_DIRECT3D11) && !defined(KORE_DIRECT3D12)
+#if !defined(KINC_DIRECT3D9) && !defined(KINC_DIRECT3D11) && !defined(KINC_DIRECT3D12)
 #define HANDLE_ALT_ENTER
 #endif
 
@@ -1148,10 +1148,16 @@ bool kinc_internal_handle_messages() {
 		}
 
 		float newbuttons[16];
-        for (int action = 0; action < 16; ++action)
+        for (int action = 0; action < 12; ++action)
         {
 			newbuttons[action] = (kinc_steam_getDigitalStatus(action)) ? 1.0f : 0.0f;
         }
+
+		WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
+		newbuttons[12] = ((kinc_steam_getDigitalStatus(12)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP) ) ? 1.0f : 0.0f;
+		newbuttons[13] = ((kinc_steam_getDigitalStatus(13)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
+		newbuttons[14] = ((kinc_steam_getDigitalStatus(14)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
+		newbuttons[15] = ((kinc_steam_getDigitalStatus(15)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_RIGHT)) ? 1.0f : 0.0f;
 
 		for (int i2 = 0; i2 < 16; ++i2) {
 			if (buttons[i * 16 + i2] != newbuttons[i2]) {
@@ -1189,7 +1195,7 @@ bool kinc_internal_handle_messages() {
 					}
 				}
 
-				WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
+				
 
 				float newbuttons[16];
 				newbuttons[0] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? 1.0f : 0.0f;
@@ -1210,6 +1216,7 @@ bool kinc_internal_handle_messages() {
 				newbuttons[14] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1.0f : 0.0f;
 				newbuttons[15] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1.0f : 0.0f;
 				*/
+				WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
 				newbuttons[12] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP) ) ? 1.0f : 0.0f;
 				newbuttons[13] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
 				newbuttons[14] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
