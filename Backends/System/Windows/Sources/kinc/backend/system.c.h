@@ -302,6 +302,8 @@ static bool cursors_initialized = false;
 static int cursor = 0;
 #define NUM_CURSORS 14
 static HCURSOR cursors[NUM_CURSORS];
+static bool m_mouseInside = false;
+static bool m_mouseWasInside = false;
 
 void kinc_mouse_set_cursor(int set_cursor) {
 	cursor = set_cursor >= NUM_CURSORS ? 0 : set_cursor;
@@ -311,6 +313,10 @@ void kinc_mouse_set_cursor(int set_cursor) {
 }
 
 LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(TRACKMOUSEEVENT);
+	tme.hwndTrack = hWnd;
+	tme.dwHoverTime = HOVER_DEFAULT;
 	int windowId;
 	DWORD pointerId;
 	POINTER_INFO pointerInfo = {0};
@@ -323,7 +329,7 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 	static int last_window_height = -1;
 	static int last_window_x = INT_MIN;
 	static int last_window_y = INT_MIN;
-
+	//kinc_log(KINC_LOG_LEVEL_WARNING, "msg : %i", msg);
 	switch (msg) {
 	case WM_NCCREATE:
 		if (MyEnableNonClientDpiScaling != NULL) {
@@ -379,21 +385,47 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		}
 		RegisterTouchWindow(hWnd, 0);
 		break;
-	case WM_MOUSELEAVE:
+	case WM_MOUSELEAVE://case WM_NCMOUSELEAVE:
+		kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Leave: %i", msg);
 		windowId = kinc_windows_window_index_from_hwnd(hWnd);
-		//**windows[windowId]->isMouseInside = false;
+		tme.dwFlags = TME_HOVER;
+		TrackMouseEvent(&tme);
+		//windows[windowId].mouseInside = false;
+		m_mouseInside = false;
+		m_mouseWasInside = false;
 		kinc_internal_mouse_trigger_leave_window(windowId);
+		break;
+	case WM_MOUSEHOVER://case WM_NCMOUSEHOVER:
+		kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Enter: %i", msg);
+		windowId = kinc_windows_window_index_from_hwnd(hWnd);
+		// windows[windowId].mouseInside = false;
+		m_mouseInside = true;
+		m_mouseWasInside = true;
+		tme.dwFlags = TME_HOVER;
+		TrackMouseEvent(&tme);
+		kinc_internal_mouse_trigger_enter_window(windowId);
 		break;
 	case WM_MOUSEMOVE:
 		windowId = kinc_windows_window_index_from_hwnd(hWnd);
-		/*if (!windows[windowId]->isMouseInside) {
-		    windows[windowId]->isMouseInside = true;
+		m_mouseInside = true;
+		if (!m_mouseWasInside)
+        {
+			kinc_internal_mouse_trigger_enter_window(windowId);
+			m_mouseWasInside = true;
+		}
+
+		tme.dwFlags = TME_LEAVE;
+		TrackMouseEvent(&tme);
+		/*
+        if (!windows[windowId].mouseInside) {
+		    windows[windowId].mouseInside = true;
 		    TRACKMOUSEEVENT tme;
 		    tme.cbSize = sizeof(TRACKMOUSEEVENT);
 		    tme.dwFlags = TME_LEAVE;
 		    tme.hwndTrack = hWnd;
 		    TrackMouseEvent(&tme);
-		}*/
+		}
+        */
 		mouseX = GET_X_LPARAM(lParam);
 		mouseY = GET_Y_LPARAM(lParam);
 		kinc_internal_mouse_trigger_move(windowId, mouseX, mouseY);
@@ -703,6 +735,9 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 			}
 		}
 		DragFinish(hDrop);
+		break;
+	default:
+		kinc_log(KINC_LOG_LEVEL_WARNING, "unhandled : %i", msg);
 		break;
 	}
 	}
