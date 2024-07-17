@@ -26,6 +26,7 @@ typedef struct {
 	void *ppiCallbackData;
 	bool (*closeCallback)(void *data);
 	void *closeCallbackData;
+	int (*fullscreenCallback)(int mode);
 } WindowData;
 
 LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -332,6 +333,7 @@ void kinc_window_change_mode(int window_index, kinc_window_mode_t mode) {
 		kinc_windows_restore_display(display_index);
 		kinc_window_change_features(window_index, win->features);
 		kinc_window_show(window_index);
+		windows[window_index].fullscreenCallback(KINC_WINDOW_MODE_WINDOW);
 		break;
 	case KINC_WINDOW_MODE_FULLSCREEN: {
 		kinc_windows_restore_display(display_index);
@@ -339,6 +341,7 @@ void kinc_window_change_mode(int window_index, kinc_window_mode_t mode) {
 		SetWindowLongW(win->handle, GWL_EXSTYLE, WS_EX_APPWINDOW);
 		SetWindowPos(win->handle, NULL, display_mode.x, display_mode.y, display_mode.width, display_mode.height, 0);
 		kinc_window_show(window_index);
+		windows[window_index].fullscreenCallback(KINC_WINDOW_MODE_FULLSCREEN);
 		break;
 	}
 	case KINC_WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
@@ -347,6 +350,7 @@ void kinc_window_change_mode(int window_index, kinc_window_mode_t mode) {
 		SetWindowLongW(win->handle, GWL_EXSTYLE, WS_EX_APPWINDOW);
 		SetWindowPos(win->handle, NULL, display_mode.x, display_mode.y, display_mode.width, display_mode.height, 0);
 		kinc_window_show(window_index);
+		windows[window_index].fullscreenCallback(KINC_WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 		break;
 	}
 	win->mode = mode;
@@ -451,6 +455,11 @@ void kinc_window_set_close_callback(int window_index, bool (*callback)(void *dat
 	windows[window_index].closeCallbackData = data;
 }
 
+void kinc_window_set_change_mode_callback(int window_index, void (*callback)(int mode))
+{
+	windows[window_index].fullscreenCallback = callback;
+}
+
 int kinc_window_display(int window_index) {
 	return kinc_windows_get_display_for_monitor(MonitorFromWindow(windows[window_index].handle, MONITOR_DEFAULTTOPRIMARY));
 }
@@ -484,4 +493,10 @@ bool kinc_internal_call_close_callback(int window_index) {
 		return windows[window_index].closeCallback(windows[window_index].closeCallbackData);
 	}
 	return true;
+}
+
+void kinc_internal_call_window_change_mode_callback(int window_index, int mode){
+	if (windows[window_index].fullscreenCallback != NULL) {
+		windows[window_index].fullscreenCallback(mode);
+	}
 }

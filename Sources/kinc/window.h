@@ -161,6 +161,11 @@ KINC_FUNC void kinc_window_set_ppi_changed_callback(int window, void (*callback)
 KINC_FUNC void kinc_window_set_close_callback(int window, bool (*callback)(void *data), void *data);
 
 /// <summary>
+/// Sets a change mode callback that's called when the window is set to fullscreen or windowed.
+/// </summary>
+KINC_FUNC void kinc_window_set_change_mode_callback(int window, void (*callback)(int mode));
+
+/// <summary>
 /// Returns whether the window is vsynced or not.
 /// </summary>
 /// <returns>Whether the window is vsynced or not</returns>
@@ -169,6 +174,7 @@ KINC_FUNC bool kinc_window_vsynced(int window);
 void kinc_internal_call_resize_callback(int window, int width, int height);
 void kinc_internal_call_ppi_changed_callback(int window, int ppi);
 bool kinc_internal_call_close_callback(int window);
+void kinc_internal_call_window_change_mode_callback(int window, int mode);
 
 #ifdef KINC_IMPLEMENTATION_ROOT
 #define KINC_IMPLEMENTATION

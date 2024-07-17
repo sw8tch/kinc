@@ -386,7 +386,6 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		RegisterTouchWindow(hWnd, 0);
 		break;
 	case WM_MOUSELEAVE://case WM_NCMOUSELEAVE:
-		kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Leave: %i", msg);
 		windowId = kinc_windows_window_index_from_hwnd(hWnd);
 		tme.dwFlags = TME_HOVER;
 		TrackMouseEvent(&tme);
@@ -394,9 +393,9 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		m_mouseInside = false;
 		m_mouseWasInside = false;
 		kinc_internal_mouse_trigger_leave_window(windowId);
+		//kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Leave: %i", msg);
 		break;
 	case WM_MOUSEHOVER://case WM_NCMOUSEHOVER:
-		kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Enter: %i", msg);
 		windowId = kinc_windows_window_index_from_hwnd(hWnd);
 		// windows[windowId].mouseInside = false;
 		m_mouseInside = true;
@@ -404,6 +403,7 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		tme.dwFlags = TME_HOVER;
 		TrackMouseEvent(&tme);
 		kinc_internal_mouse_trigger_enter_window(windowId);
+		//kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Enter: %i", msg);
 		break;
 	case WM_MOUSEMOVE:
 		windowId = kinc_windows_window_index_from_hwnd(hWnd);
@@ -737,7 +737,6 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		DragFinish(hDrop);
 		break;
 	default:
-		kinc_log(KINC_LOG_LEVEL_WARNING, "unhandled : %i", msg);
 		break;
 	}
 	}
