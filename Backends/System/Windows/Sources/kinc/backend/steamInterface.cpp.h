@@ -1,5 +1,5 @@
-#include "kinc/steam/steam.h"
-#include "kinc/steam/StatsAndAchievements.h"
+#include "steam/steam.h"
+#include "steam/StatsAndAchievements.h"
 #include "kinc/log.h"
 #include <XInput.h>
 #include "steam/isteaminput.h"
