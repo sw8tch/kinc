@@ -400,7 +400,7 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 		// windows[windowId].mouseInside = false;
 		m_mouseInside = true;
 		m_mouseWasInside = true;
-		tme.dwFlags = TME_HOVER;
+		tme.dwFlags = TME_LEAVE;
 		TrackMouseEvent(&tme);
 		kinc_internal_mouse_trigger_enter_window(windowId);
 		//kinc_log(KINC_LOG_LEVEL_WARNING, "Mouse Enter: %i", msg);
@@ -661,13 +661,13 @@ LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, L
 						kinc_window_change_mode(0, KINC_WINDOW_MODE_FULLSCREEN);
 					}
 					else {
-						kinc_window_change_mode(0, KINC_WINDOW_MODE_WINDOW);
 						if (last_window_width > 0 && last_window_height > 0) {
 							kinc_window_resize(0, last_window_width, last_window_height);
 						}
 						if (last_window_x > INT_MIN && last_window_y > INT_MIN) {
 							kinc_window_move(0, last_window_x, last_window_y);
 						}
+						kinc_window_change_mode(0, KINC_WINDOW_MODE_WINDOW);
 					}
 				}
 #endif
