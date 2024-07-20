@@ -11,21 +11,21 @@
 
 #define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
 
-    CSteamAchievements *g_SteamAchievements = NULL;
+CSteamAchievements *g_SteamAchievements = NULL;
 
-    // Achievement array which will hold data about the achievements and their state
-    Achievement_t g_Achievements[] = {
-        _ACH_ID(ACH_Finish_Game, "Finish Game"),
-        _ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
-    };
+// Achievement array which will hold data about the achievements and their state
+Achievement_t g_Achievements[] = {
+    _ACH_ID(ACH_Finish_Game, "Finish Game"),
+    _ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
+};
 
-    InputDigitalActionHandle_t m_ControllerDigitalActionHandles[16];
-    InputAnalogActionHandle_t m_ControllerAnalogActionHandles[6];
+InputDigitalActionHandle_t m_ControllerDigitalActionHandles[16];
+InputAnalogActionHandle_t m_ControllerAnalogActionHandles[6];
 
-	// A handle to the currently active Steam Controller.
-	InputHandle_t m_ActiveControllerHandle;
-    ControllerHandle_t pHandles[8];
-    bool kinc_steam_init()
+// A handle to the currently active Steam Controller.
+InputHandle_t m_ActiveControllerHandle;
+ControllerHandle_t pHandles[8];
+bool kinc_steam_init()
 {
 	SteamAPI_RestartAppIfNecessary(STEAMAPPID);
 	if (!SteamAPI_Init()) {
@@ -46,6 +46,10 @@
 }
 
 void kinc_steam_actions_register() {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return;
+
 	m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
 	m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("ActionB");
 	m_ControllerDigitalActionHandles[2] = SteamInput()->GetDigitalActionHandle("ActionX");
@@ -65,6 +69,10 @@ void kinc_steam_actions_register() {
 }
 
 void kinc_steam_axis_register() {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return;
+
 	m_ControllerAnalogActionHandles[0] = SteamInput()->GetAnalogActionHandle("Move");
 	m_ControllerAnalogActionHandles[1] = SteamInput()->GetAnalogActionHandle("look");
 	m_ControllerAnalogActionHandles[2] = SteamInput()->GetAnalogActionHandle("leftTrigger");
@@ -73,15 +81,18 @@ void kinc_steam_axis_register() {
 
 void kinc_steam_inputaction()
 {
+	ISteamInput *steamInput = SteamInput();
+	if (!steamInput)
+		return;
 	//m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
 	//m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("ActionB");
 }
 
-void kinc_steam_update()
+bool kinc_steam_update()
 {
 	ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
-		return;
+		return false;
 
     kinc_steam_input_findcontroller();
 	kinc_steam_actions_register();
@@ -90,6 +101,7 @@ void kinc_steam_update()
     SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
     SteamAPI_RunCallbacks();
 
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -157,7 +169,7 @@ void kinc_steam_set_achievement(const char *achievementID)
 {
 	kinc_log(KINC_LOG_LEVEL_INFO, "\nKincSteam : Called achievement %s", achievementID);
 	// Have we received a call back from Steam yet?
-	if (true) {
+	if (SteamUserStats()) {
 		SteamUserStats()->SetAchievement(achievementID);
 		SteamUserStats()->StoreStats();
 	}
@@ -167,9 +179,15 @@ void kinc_steam_set_achievement(const char *achievementID)
 
 void kinc_steam_richpresence_update(const char* key, const char* value)
 {
-	SteamFriends()->SetRichPresence(key,value);
+	if (SteamFriends())
+	{
+		SteamFriends()->SetRichPresence(key, value);
+	}
 }
 void kinc_steam_richpresence_clear()
 {
-	SteamFriends()->ClearRichPresence();
+	if (SteamFriends())
+	{
+		SteamFriends()->ClearRichPresence();
+	}
 }
