@@ -1488,7 +1488,11 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	kinc_display_init();
 
 #ifdef KINC_USE_STEAM
-	kinc_steam_init();
+	if (!kinc_steam_init())
+	{
+		kinc_internal_shutdown();
+		return;
+	}
 	//kinc_steam_actions_register();
 #endif
 
