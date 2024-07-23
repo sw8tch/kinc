@@ -45,6 +45,11 @@
 	return 1;
 }
 
+void kinc_steam_shutdown()
+{
+	SteamAPI_Shutdown();
+}
+
 void kinc_steam_actions_register() {
 	m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
 	m_ControllerDigitalActionHandles[1] = SteamInput()->GetDigitalActionHandle("ActionB");

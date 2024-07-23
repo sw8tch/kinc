@@ -12,6 +12,7 @@ extern "C" {
 
 
 KINC_FUNC bool kinc_steam_init();
+KINC_FUNC void kinc_steam_shutdown();
 KINC_FUNC void kinc_steam_inputaction();
 KINC_FUNC void kinc_steam_actions_register();
 KINC_FUNC void kinc_steam_axis_register();
