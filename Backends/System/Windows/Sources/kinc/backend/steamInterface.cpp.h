@@ -45,6 +45,11 @@ bool kinc_steam_init()
 	return 1;
 }
 
+void kinc_steam_shutdown()
+{
+	SteamAPI_Shutdown();
+}
+
 void kinc_steam_actions_register() {
 	ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
