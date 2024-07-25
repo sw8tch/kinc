@@ -13,25 +13,38 @@
 
 CSteamAchievements *g_SteamAchievements = NULL;
 
+class CGameManager {
+private:
+	STEAM_CALLBACK(CGameManager, OnGameOverlayActivated, GameOverlayActivated_t);
+};
+
+void CGameManager::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
+	kinc_steam_internal_call_gameoverlayactivated_callback(pCallback->m_bActive);
+}
+
 // Achievement array which will hold data about the achievements and their state
 Achievement_t g_Achievements[] = {
     _ACH_ID(ACH_Finish_Game, "Finish Game"),
     _ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
 };
 
+CGameManager* g_gamemanager;
+
 InputDigitalActionHandle_t m_ControllerDigitalActionHandles[16];
 InputAnalogActionHandle_t m_ControllerAnalogActionHandles[6];
 
 // A handle to the currently active Steam Controller.
 InputHandle_t m_ActiveControllerHandle;
-ControllerHandle_t pHandles[8];
+ControllerHandle_t pHandles[STEAM_INPUT_MAX_COUNT];
+ISteamInput *steamInput;
+
 bool kinc_steam_init()
 {
 	SteamAPI_RestartAppIfNecessary(STEAMAPPID);
 	if (!SteamAPI_Init()) {
 		return 0;
 	}
-	SteamInput()->Init(false);
+
 	const char *pchName = "Normal Mode";
 	//kinc_steam_richpresence_update("gamename",pchName);
 	//kinc_steam_richpresence_update("steam_display", "#StatusInGame");
@@ -41,6 +54,9 @@ bool kinc_steam_init()
 */
 	//SteamFriends()->SetPersonaName("OMG ! !  !");
 	g_SteamAchievements = new CSteamAchievements(g_Achievements, 2);
+	g_gamemanager = new CGameManager();
+	steamInput = SteamInput();
+	steamInput->Init(true);
 
 	return 1;
 }
@@ -51,7 +67,7 @@ void kinc_steam_shutdown()
 }
 
 void kinc_steam_actions_register() {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
 
@@ -74,7 +90,7 @@ void kinc_steam_actions_register() {
 }
 
 void kinc_steam_axis_register() {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
 
@@ -86,7 +102,7 @@ void kinc_steam_axis_register() {
 
 void kinc_steam_inputaction()
 {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
 	//m_ControllerDigitalActionHandles[0] = SteamInput()->GetDigitalActionHandle("ActionA");
@@ -95,7 +111,7 @@ void kinc_steam_inputaction()
 
 bool kinc_steam_update()
 {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return false;
 
@@ -105,7 +121,6 @@ bool kinc_steam_update()
     InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
     SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
     SteamAPI_RunCallbacks();
-
 	return true;
 }
 
@@ -113,7 +128,7 @@ bool kinc_steam_update()
 // Purpose: Find out if a controller event is currently active
 //-----------------------------------------------------------------------------
 bool kinc_steam_getDigitalStatus(int num) {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return false;
 
@@ -130,7 +145,7 @@ bool kinc_steam_getDigitalStatus(int num) {
 // Purpose: Get the current x,y state of the analog action. Examples of an analog action are a virtual joystick on the trackpad or the real joystick.
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 void kinc_steam_getAnalogStatus(int num, float *x, float *y) {
-	ISteamInput *steamInput = SteamInput();
+	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
 
@@ -157,11 +172,11 @@ void kinc_steam_input_findcontroller( )
 	// a given controller, even across power cycles.
 
 	// See how many Steam Controllers are active. 
-	ISteamInput* steamInput = SteamInput();
+	//ISteamInput* steamInput = SteamInput();
 	if (!steamInput)
 		return;
-	
-	int nNumActive = SteamInput()->GetConnectedControllers( pHandles );
+
+	int nNumActive = steamInput->GetConnectedControllers( pHandles );
 
 	// If there's an active controller, and if we're not already using it, select the first one.
 	if ( nNumActive && (m_ActiveControllerHandle != pHandles[0]) )
@@ -194,5 +209,16 @@ void kinc_steam_richpresence_clear()
 	if (SteamFriends())
 	{
 		SteamFriends()->ClearRichPresence();
+	}
+}
+
+void kinc_steam_set_gameoverlayactivated_callback(void (*value)(bool /* active */, void* /* userdata*/), void *userdata) {
+	steam_gameoverlayactivated_callback = value;
+	steam_gameoverlayactivated_callback_userdata = userdata;
+}
+
+void kinc_steam_internal_call_gameoverlayactivated_callback(bool active) {
+	if (steam_gameoverlayactivated_callback != NULL) {
+		steam_gameoverlayactivated_callback(active,steam_gameoverlayactivated_callback_userdata);
 	}
 }

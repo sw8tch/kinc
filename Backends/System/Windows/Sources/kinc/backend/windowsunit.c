@@ -124,3 +124,7 @@ enum tagPOINTER_INPUT_TYPE {
 #include "mouse.c.h"
 #include "system.c.h"
 #include "window.c.h"
+
+#if defined(KINC_USE_STEAM)
+#define KINC_IMPLEMENTATION_STEAM
+#endif
