@@ -1,13 +1,12 @@
-#include "steam/steam.h"
-#include "steam/StatsAndAchievements.h"
+#include "steam.h"
+#include "StatsAndAchievements.h"
 #include "kinc/log.h"
-#include <XInput.h>
-#include "steam/isteaminput.h"
-#include "steam/steam_api.h"
-#include "steam/isteamfriends.h"
-#include "steam/isteamuser.h"
-#include "steam/isteamuserstats.h"
-#include "steam/isteamutils.h"
+#include <steam/isteaminput.h>
+#include <steam/steam_api.h>
+#include <steam/isteamfriends.h>
+#include <steam/isteamuser.h>
+#include <steam/isteamuserstats.h>
+#include <steam/isteamutils.h>
 
 #define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
 

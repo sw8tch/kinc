@@ -34,8 +34,7 @@ __itt_domain *kinc_itt_domain;
 #endif
 
 #ifdef KINC_USE_STEAM
-#include "steam/steam.h"
-//#include <steam/steam.h>
+#include <kinc/backend/steam.h>
 #endif
 
 #ifdef KORE_G4ONG5
