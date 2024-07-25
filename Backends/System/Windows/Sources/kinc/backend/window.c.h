@@ -502,4 +502,5 @@ void kinc_internal_call_window_change_mode_callback(int window_index, int mode){
 	if (windows[window_index].fullscreenCallback != NULL) {
 		windows[window_index].fullscreenCallback(mode);
 	}
+	return -1;
 }
