@@ -1,7 +1,7 @@
-#include "steam.h"
-#include "steam/isteamuser.h"
-#include "steam/isteamuserstats.h"
-#include "steam/steam_api.h"
+#include <kinc/backend/steam.h>
+#include <steam/isteamuser.h>
+#include <steam/isteamuserstats.h>
+#include <steam/steam_api.h>
 
 #ifndef STATS_AND_ACHIEVEMENTS_H
 #define STATS_AND_ACHIEVEMENTS_H
