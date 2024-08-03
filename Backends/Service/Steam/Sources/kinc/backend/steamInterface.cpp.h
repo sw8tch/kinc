@@ -7,6 +7,7 @@
 #include <steam/isteamuser.h>
 #include <steam/isteamuserstats.h>
 #include <steam/isteamutils.h>
+#include <steam/isteamapps.h>
 
 #define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
 
@@ -209,6 +210,13 @@ void kinc_steam_richpresence_clear()
 	{
 		SteamFriends()->ClearRichPresence();
 	}
+}
+
+const char *kinc_steam_get_language()
+{
+	if (!SteamApps())
+		return nullptr;
+	return SteamApps()->GetCurrentGameLanguage();
 }
 
 void kinc_steam_set_gameoverlayactivated_callback(void (*value)(bool /* active */, void* /* userdata*/), void *userdata) {
