@@ -6,6 +6,7 @@
 
 #include "image.h"
 #include "memory.h"
+#include "service.h"
 #include "string.h"
 #include "system.h"
 #include "window.h"
