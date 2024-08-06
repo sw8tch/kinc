@@ -1,6 +1,8 @@
-#include "steam.h"
-#include "StatsAndAchievements.h"
+#include "kinc/service.h"
 #include "kinc/log.h"
+
+#include "StatsAndAchievements.h"
+
 #include <steam/isteaminput.h>
 #include <steam/steam_api.h>
 #include <steam/isteamfriends.h>
@@ -10,6 +12,11 @@
 #include <steam/isteamapps.h>
 
 #define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
+
+static void kinc_steam_internal_call_gameoverlayactivated_callback(bool active);
+static void kinc_steam_actions_register();
+static void kinc_steam_axis_register();
+static void kinc_steam_input_findcontroller();
 
 CSteamAchievements *g_SteamAchievements = NULL;
 
@@ -24,8 +31,8 @@ void CGameManager::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
 
 // Achievement array which will hold data about the achievements and their state
 Achievement_t g_Achievements[] = {
-    _ACH_ID(ACH_Finish_Game, "Finish Game"),
-    _ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
+	_ACH_ID(ACH_Finish_Game, "Finish Game"),
+	_ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
 };
 
 CGameManager* g_gamemanager;
@@ -38,7 +45,7 @@ InputHandle_t m_ActiveControllerHandle;
 ControllerHandle_t pHandles[STEAM_INPUT_MAX_COUNT];
 ISteamInput *steamInput;
 
-bool kinc_steam_init()
+int kinc_service_init()
 {
 	SteamAPI_RestartAppIfNecessary(STEAMAPPID);
 	if (!SteamAPI_Init()) {
@@ -61,12 +68,12 @@ bool kinc_steam_init()
 	return 1;
 }
 
-void kinc_steam_shutdown()
+void kinc_service_shutdown()
 {
 	SteamAPI_Shutdown();
 }
 
-void kinc_steam_actions_register() {
+static void kinc_steam_actions_register() {
 	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
@@ -89,7 +96,7 @@ void kinc_steam_actions_register() {
 	m_ControllerDigitalActionHandles[15] = SteamInput()->GetDigitalActionHandle("DPadRight");
 }
 
-void kinc_steam_axis_register() {
+static void kinc_steam_axis_register() {
 	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
@@ -115,12 +122,12 @@ bool kinc_steam_update()
 	if (!steamInput)
 		return false;
 
-    kinc_steam_input_findcontroller();
+	kinc_steam_input_findcontroller();
 	kinc_steam_actions_register();
 	kinc_steam_axis_register();
-    InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
-    SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
-    SteamAPI_RunCallbacks();
+	InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
+	SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
+	SteamAPI_RunCallbacks();
 	return true;
 }
 
@@ -165,13 +172,13 @@ void kinc_steam_getAnalogStatus(int num, float *x, float *y) {
 //-----------------------------------------------------------------------------
 // Purpose: Find an active Steam controller
 //-----------------------------------------------------------------------------
-void kinc_steam_input_findcontroller( )
+static void kinc_steam_input_findcontroller( )
 {
 	// Use the first available steam controller for all interaction. We can call this each frame to handle
 	// a controller disconnecting and a different one reconnecting. Handles are guaranteed to be unique for
 	// a given controller, even across power cycles.
 
-	// See how many Steam Controllers are active. 
+	// See how many Steam Controllers are active.
 	//ISteamInput* steamInput = SteamInput();
 	if (!steamInput)
 		return;
@@ -185,7 +192,7 @@ void kinc_steam_input_findcontroller( )
 	}
 }
 
-void kinc_steam_set_achievement(const char *achievementID)
+void kinc_service_set_achievement(const char *achievementID)
 {
 	kinc_log(KINC_LOG_LEVEL_INFO, "\nKincSteam : Called achievement %s", achievementID);
 	// Have we received a call back from Steam yet?
@@ -197,14 +204,14 @@ void kinc_steam_set_achievement(const char *achievementID)
 	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
 }
 
-void kinc_steam_richpresence_update(const char* key, const char* value)
+void kinc_service_set_rich_presence(const char* key, const char* value)
 {
 	if (SteamFriends())
 	{
 		SteamFriends()->SetRichPresence(key, value);
 	}
 }
-void kinc_steam_richpresence_clear()
+void kinc_service_clear_rich_presence()
 {
 	if (SteamFriends())
 	{
@@ -212,19 +219,19 @@ void kinc_steam_richpresence_clear()
 	}
 }
 
-const char *kinc_steam_get_language()
+const char *kinc_service_get_language()
 {
 	if (!SteamApps())
 		return nullptr;
 	return SteamApps()->GetCurrentGameLanguage();
 }
 
-void kinc_steam_set_gameoverlayactivated_callback(void (*value)(bool /* active */, void* /* userdata*/), void *userdata) {
+static void kinc_steam_set_gameoverlayactivated_callback(void (*value)(bool /* active */, void* /* userdata*/), void *userdata) {
 	steam_gameoverlayactivated_callback = value;
 	steam_gameoverlayactivated_callback_userdata = userdata;
 }
 
-void kinc_steam_internal_call_gameoverlayactivated_callback(bool active) {
+static void kinc_steam_internal_call_gameoverlayactivated_callback(bool active) {
 	if (steam_gameoverlayactivated_callback != NULL) {
 		steam_gameoverlayactivated_callback(active,steam_gameoverlayactivated_callback_userdata);
 	}
