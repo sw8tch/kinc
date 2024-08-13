@@ -1,3 +1,5 @@
+#pragma once
+
 #include "kinc/service.h"
 #include "kinc/log.h"
 
@@ -11,9 +13,10 @@
 #include <steam/isteamutils.h>
 #include <steam/isteamapps.h>
 
-#define _ACH_ID(id, name){ id, #id, name, "", 0, 0 }
+#define _ACH_ID(id, name){ id, name, "", 0, 0 }
 
 static void kinc_steam_internal_call_gameoverlayactivated_callback(bool active);
+
 static void kinc_steam_actions_register();
 static void kinc_steam_axis_register();
 static void kinc_steam_input_findcontroller();
@@ -21,19 +24,21 @@ static void kinc_steam_input_findcontroller();
 CSteamAchievements *g_SteamAchievements = NULL;
 
 class CGameManager {
-private:
+public:
+	CGameManager();
+	~CGameManager();
 	STEAM_CALLBACK(CGameManager, OnGameOverlayActivated, GameOverlayActivated_t);
+
 };
+
+CGameManager::CGameManager()
+{
+
+}
 
 void CGameManager::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
 	kinc_steam_internal_call_gameoverlayactivated_callback(pCallback->m_bActive);
 }
-
-// Achievement array which will hold data about the achievements and their state
-Achievement_t g_Achievements[] = {
-	_ACH_ID(ACH_Finish_Game, "Finish Game"),
-	_ACH_ID(ACH_Finish_Game_Full, "Finish Game Full"),
-};
 
 CGameManager* g_gamemanager;
 
@@ -60,12 +65,19 @@ int kinc_service_init()
 	SteamFriends()->SetRichPresence("steam_display", "#StatusInGame");
 */
 	//SteamFriends()->SetPersonaName("OMG ! !  !");
-	g_SteamAchievements = new CSteamAchievements(g_Achievements, 2);
+	g_SteamAchievements = new CSteamAchievements();
 	g_gamemanager = new CGameManager();
 	steamInput = SteamInput();
 	steamInput->Init(true);
+	g_SteamAchievements->Update();
 
 	return 1;
+}
+
+void kinc_service_update()
+{
+	g_SteamAchievements->Update();
+	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
 }
 
 void kinc_service_shutdown()
@@ -195,13 +207,7 @@ static void kinc_steam_input_findcontroller( )
 void kinc_service_set_achievement(const char *achievementID)
 {
 	kinc_log(KINC_LOG_LEVEL_INFO, "\nKincSteam : Called achievement %s", achievementID);
-	// Have we received a call back from Steam yet?
-	if (SteamUserStats()) {
-		SteamUserStats()->SetAchievement(achievementID);
-		SteamUserStats()->StoreStats();
-	}
-
-	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
+	g_SteamAchievements->SetAchievement(achievementID);
 }
 
 void kinc_service_set_rich_presence(const char* key, const char* value)
