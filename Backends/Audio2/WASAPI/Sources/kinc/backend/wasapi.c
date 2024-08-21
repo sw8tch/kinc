@@ -75,7 +75,6 @@ static IMMDevice *device;
 static IAudioClient *audioClient = NULL;
 static IAudioRenderClient *renderClient = NULL;
 static HANDLE bufferEndEvent = 0;
-static HANDLE audioProcessingDoneEvent;
 static UINT32 bufferFrames;
 static WAVEFORMATEX requestedFormat;
 static WAVEFORMATEX *closestFormat;
@@ -163,6 +162,24 @@ static bool initDefaultDevice() {
 	}
 }
 
+static void submitEmptyBuffer(unsigned frames) {
+	BYTE *buffer = NULL;
+	HRESULT result = renderClient->lpVtbl->GetBuffer(renderClient, frames, &buffer);
+	if (FAILED(result)) {
+		return;
+	}
+
+	memset(buffer, 0, frames * format->nBlockAlign);
+
+	result = renderClient->lpVtbl->ReleaseBuffer(renderClient, frames, 0);
+}
+
+static void restartAudio() {
+	initDefaultDevice();
+	submitEmptyBuffer(bufferFrames);
+	audioClient->lpVtbl->Start(audioClient);
+}
+
 static void copyS16Sample(int16_t *left, int16_t *right) {
 	float left_value = *(float *)&a2_buffer.channels[0][a2_buffer.read_location];
 	float right_value = *(float *)&a2_buffer.channels[1][a2_buffer.read_location];
@@ -185,26 +202,12 @@ static void copyFloatSample(float *left, float *right) {
 	*right = right_value;
 }
 
-static void submitEmptyBuffer(unsigned frames) {
-	BYTE *buffer = NULL;
-	HRESULT result = renderClient->lpVtbl->GetBuffer(renderClient, frames, &buffer);
-	if (FAILED(result)) {
-		return;
-	}
-
-	memset(buffer, 0, frames * format->nBlockAlign);
-
-	result = renderClient->lpVtbl->ReleaseBuffer(renderClient, frames, 0);
-}
-
 static void submitBuffer(unsigned frames) {
 	BYTE *buffer = NULL;
 	HRESULT result = renderClient->lpVtbl->GetBuffer(renderClient, frames, &buffer);
 	if (FAILED(result)) {
 		if (result == AUDCLNT_E_DEVICE_INVALIDATED) {
-			initDefaultDevice();
-			submitEmptyBuffer(bufferFrames);
-			audioClient->lpVtbl->Start(audioClient);
+			restartAudio();
 		}
 		return;
 	}
@@ -228,9 +231,7 @@ static void submitBuffer(unsigned frames) {
 	result = renderClient->lpVtbl->ReleaseBuffer(renderClient, frames, 0);
 	if (FAILED(result)) {
 		if (result == AUDCLNT_E_DEVICE_INVALIDATED) {
-			initDefaultDevice();
-			submitEmptyBuffer(bufferFrames);
-			audioClient->lpVtbl->Start(audioClient);
+			restartAudio();
 		}
 	}
 }
@@ -238,15 +239,13 @@ static void submitBuffer(unsigned frames) {
 static DWORD WINAPI audioThread(LPVOID ignored) {
 	submitBuffer(bufferFrames);
 	audioClient->lpVtbl->Start(audioClient);
-	while (WAIT_OBJECT_0 != WaitForSingleObject(audioProcessingDoneEvent, 0)) {
+	while (1) {
 		WaitForSingleObject(bufferEndEvent, INFINITE);
 		UINT32 padding = 0;
 		HRESULT result = audioClient->lpVtbl->GetCurrentPadding(audioClient, &padding);
 		if (FAILED(result)) {
 			if (result == AUDCLNT_E_DEVICE_INVALIDATED) {
-				initDefaultDevice();
-				submitEmptyBuffer(bufferFrames);
-				audioClient->lpVtbl->Start(audioClient);
+				restartAudio();
 			}
 			continue;
 		}
@@ -274,9 +273,6 @@ void kinc_a2_init() {
 	a2_buffer.channel_count = 2;
 	a2_buffer.channels[0] = (float *)malloc(a2_buffer.data_size * sizeof(float));
 	a2_buffer.channels[1] = (float *)malloc(a2_buffer.data_size * sizeof(float));
-
-	audioProcessingDoneEvent = CreateEvent(0, FALSE, FALSE, 0);
-	kinc_affirm(audioProcessingDoneEvent != 0);
 
 	kinc_windows_co_initialize();
 	kinc_microsoft_affirm(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **)&deviceEnumerator));
