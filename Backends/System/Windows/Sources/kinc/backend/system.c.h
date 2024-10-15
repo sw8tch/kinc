@@ -1165,34 +1165,34 @@ bool kinc_internal_handle_messages() {
 
 	if (use_steam_input) {
 		// m_ControllerActionSetHandles[0].
-		for (DWORD i = 0; i < 1; ++i) // KINC_DINPUT_MAX_COUNT
+		for (DWORD i = 0; i < KINC_DINPUT_MAX_COUNT; ++i) // KINC_DINPUT_MAX_COUNT
 		{
-
+			int gamepadid = i; 
 			float newaxes[6];
 			for (int action = 0; action < 3; ++action) {
 				float x;
 				float y;
-				kinc_steam_getAnalogStatus(action, &x, &y);
+				kinc_steam_getAnalogStatus(gamepadid, action, &x, &y);
 				newaxes[action * 2] = x;
 				newaxes[action * 2 + 1] = y;
 			}
 			for (int i2 = 0; i2 < 6; ++i2) {
 				if (axes[i * 6 + i2] != newaxes[i2]) {
-					kinc_internal_gamepad_trigger_axis(i, i2, newaxes[i2]);
+					kinc_internal_gamepad_trigger_axis(gamepadid, i, i2, newaxes[i2]);
 					axes[i * 6 + i2] = newaxes[i2];
 				}
 			}
 
 			float newbuttons[16];
 			for (int action = 0; action < 12; ++action) {
-				newbuttons[action] = (kinc_steam_getDigitalStatus(action)) ? 1.0f : 0.0f;
+				newbuttons[action] = (kinc_steam_getDigitalStatus(gamepadid, action)) ? 1.0f : 0.0f;
 			}
 
 			WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0], newaxes[1]);
-			newbuttons[12] = ((kinc_steam_getDigitalStatus(12)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP)) ? 1.0f : 0.0f;
-			newbuttons[13] = ((kinc_steam_getDigitalStatus(13)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
-			newbuttons[14] = ((kinc_steam_getDigitalStatus(14)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
-			newbuttons[15] = ((kinc_steam_getDigitalStatus(15)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_RIGHT)) ? 1.0f : 0.0f;
+			newbuttons[12] = ((kinc_steam_getDigitalStatus(gamepadid, 12)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP)) ? 1.0f : 0.0f;
+			newbuttons[13] = ((kinc_steam_getDigitalStatus(gamepadid, 13)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
+			newbuttons[14] = ((kinc_steam_getDigitalStatus(gamepadid, 14)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
+			newbuttons[15] = ((kinc_steam_getDigitalStatus(gamepadid, 15)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_RIGHT)) ? 1.0f : 0.0f;
 
 			for (int i2 = 0; i2 < 16; ++i2) {
 				if (buttons[i * 16 + i2] != newbuttons[i2]) {
@@ -1326,6 +1326,10 @@ const char *kinc_language() {
 const char *kinc_system_id() {
 	return "Windows";
 }
+
+
+bool kinc_set_playernum(int newPlayerNum){ return true;}
+int kinc_get_playernum(){return 1;}
 
 static bool co_initialized = false;
 

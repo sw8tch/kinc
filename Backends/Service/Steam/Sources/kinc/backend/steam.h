@@ -10,8 +10,8 @@ extern "C" {
 #endif
 
 KINC_FUNC bool kinc_steam_update();
-KINC_FUNC bool kinc_steam_getDigitalStatus(int num);
-KINC_FUNC void kinc_steam_getAnalogStatus(int num, float *x, float *y);
+KINC_FUNC bool kinc_steam_getDigitalStatus(int gamepadid,int num);
+KINC_FUNC void kinc_steam_getAnalogStatus(int gamepadid,int num, float *x, float *y);
 
 typedef struct kinc_achievement {
 	char m_pchAchievementID[128];

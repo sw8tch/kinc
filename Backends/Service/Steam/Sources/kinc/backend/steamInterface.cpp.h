@@ -47,6 +47,7 @@ InputAnalogActionHandle_t m_ControllerAnalogActionHandles[6];
 
 // A handle to the currently active Steam Controller.
 InputHandle_t m_ActiveControllerHandle;
+InputHandle_t m_ActiveControllerHandles[STEAM_INPUT_MAX_COUNT];
 ControllerHandle_t pHandles[STEAM_INPUT_MAX_COUNT];
 ISteamInput *steamInput;
 
@@ -134,11 +135,19 @@ bool kinc_steam_update()
 	if (!steamInput)
 		return false;
 
+    InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
+
 	kinc_steam_input_findcontroller();
+
+
 	kinc_steam_actions_register();
 	kinc_steam_axis_register();
-	InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
-	SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
+
+    for (auto handle : m_ActiveControllerHandles) {
+		SteamInput()->ActivateActionSet(handle, actionset);
+	}
+
+	//SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
 	SteamAPI_RunCallbacks();
 	return true;
 }
@@ -146,11 +155,12 @@ bool kinc_steam_update()
 //-----------------------------------------------------------------------------
 // Purpose: Find out if a controller event is currently active
 //-----------------------------------------------------------------------------
-bool kinc_steam_getDigitalStatus(int num) {
+bool kinc_steam_getDigitalStatus(int gamepadid, int num) {
 	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return false;
 
+	m_ActiveControllerHandle = m_ActiveControllerHandles[gamepadid];
 	ControllerDigitalActionData_t digitalData = SteamInput()->GetDigitalActionData(m_ActiveControllerHandle, m_ControllerDigitalActionHandles[num]);
 
 	// Actions are only 'active' when they're assigned to a control in an action set, and that action set is active.
@@ -163,11 +173,12 @@ bool kinc_steam_getDigitalStatus(int num) {
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 // Purpose: Get the current x,y state of the analog action. Examples of an analog action are a virtual joystick on the trackpad or the real joystick.
 //---------------------------------------------------------------------------------------------------------------------------------------------------
-void kinc_steam_getAnalogStatus(int num, float *x, float *y) {
+void kinc_steam_getAnalogStatus(int gamepadid, int num, float *x, float *y) {
 	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)
 		return;
 
+	m_ActiveControllerHandle = m_ActiveControllerHandles[gamepadid];
 	ControllerAnalogActionData_t analogData = SteamInput()->GetAnalogActionData(m_ActiveControllerHandle, m_ControllerAnalogActionHandles[num]);
 
 	// Actions are only 'active' when they're assigned to a control in an action set, and that action set is active.
@@ -196,7 +207,10 @@ static void kinc_steam_input_findcontroller( )
 		return;
 
 	int nNumActive = steamInput->GetConnectedControllers( pHandles );
-
+    for (int i = 0; i < nNumActive; ++i)
+    {
+		m_ActiveControllerHandles[i] = pHandles[i];
+    }
 	// If there's an active controller, and if we're not already using it, select the first one.
 	if ( nNumActive && (m_ActiveControllerHandle != pHandles[0]) )
 	{

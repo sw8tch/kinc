@@ -70,6 +70,18 @@ KINC_FUNC const char *kinc_system_id(void);
 KINC_FUNC const char *kinc_language(void);
 
 /// <summary>
+/// sets the number of players.
+/// </summary>
+/// <returns>bool reflecting in the action was successful or not</returns>
+KINC_FUNC bool kinc_set_playernum(int newPlayerNum);
+
+/// <summary>
+/// gets the number of players.
+/// </summary>
+/// <returns>current number of players</returns>
+KINC_FUNC int kinc_get_playernum();
+
+/// <summary>
 /// Vibrates the whole system if supported. This is primarily supported on mobile phones but don't blame us if your computer falls over.
 /// </summary>
 KINC_FUNC void kinc_vibrate(int milliseconds);
