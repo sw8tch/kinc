@@ -59,6 +59,8 @@ static EnableNonClientDpiScalingType MyEnableNonClientDpiScaling = NULL;
 #define MAX_TOUCH_POINTS 10
 
 #define KINC_DINPUT_MAX_COUNT 8
+#define KINC_DINPUT_MAX_AXIS 6
+#define KINC_DINPUT_MAX_BUTTONS 16
 
 struct touchpoint {
 	int sysID;
@@ -1222,16 +1224,16 @@ bool kinc_internal_handle_messages() {
 				newaxes[3] = state.Gamepad.sThumbRY / 32768.0f;
 				newaxes[4] = state.Gamepad.bLeftTrigger / 255.0f;
 				newaxes[5] = state.Gamepad.bRightTrigger / 255.0f;
-				for (int i2 = 0; i2 < 6; ++i2) {
-					if (axes[i * 6 + i2] != newaxes[i2]) {
+				for (int i2 = 0; i2 < KINC_DINPUT_MAX_AXIS; ++i2) {
+					if (axes[i * KINC_DINPUT_MAX_AXIS + i2] != newaxes[i2]) {
 						kinc_internal_gamepad_trigger_axis(i, i2, newaxes[i2]);
-						axes[i * 6 + i2] = newaxes[i2];
+						axes[i * KINC_DINPUT_MAX_AXIS + i2] = newaxes[i2];
 					}
 				}
 
 				
 
-				float newbuttons[16];
+				float newbuttons[KINC_DINPUT_MAX_BUTTONS];
 				newbuttons[0] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? 1.0f : 0.0f;
 				newbuttons[1] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? 1.0f : 0.0f;
 				newbuttons[2] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? 1.0f : 0.0f;
@@ -1257,10 +1259,10 @@ bool kinc_internal_handle_messages() {
 				newbuttons[15] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_RIGHT)) ? 1.0f : 0.0f;
 
 
-				for (int i2 = 0; i2 < 16; ++i2) {
-					if (buttons[i * 16 + i2] != newbuttons[i2]) {
+				for (int i2 = 0; i2 < KINC_DINPUT_MAX_BUTTONS; ++i2) {
+					if (buttons[i * KINC_DINPUT_MAX_BUTTONS + i2] != newbuttons[i2]) {
 						kinc_internal_gamepad_trigger_button(i, i2, newbuttons[i2]);
-						buttons[i * 16 + i2] = newbuttons[i2];
+						buttons[i * KINC_DINPUT_MAX_BUTTONS + i2] = newbuttons[i2];
 					}
 				}
 			}
