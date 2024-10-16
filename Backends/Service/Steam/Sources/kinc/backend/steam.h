@@ -12,6 +12,7 @@ extern "C" {
 KINC_FUNC bool kinc_steam_update();
 KINC_FUNC bool kinc_steam_getDigitalStatus(int gamepadid,int num);
 KINC_FUNC void kinc_steam_getAnalogStatus(int gamepadid,int num, float *x, float *y);
+KINC_FUNC int  kinc_steam_getNumControllers();
 
 typedef struct kinc_achievement {
 	char m_pchAchievementID[128];

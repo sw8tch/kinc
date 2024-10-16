@@ -1165,9 +1165,10 @@ bool kinc_internal_handle_messages() {
 
 	if (use_steam_input) {
 		// m_ControllerActionSetHandles[0].
-		for (DWORD i = 0; i < KINC_DINPUT_MAX_COUNT; ++i) // KINC_DINPUT_MAX_COUNT
+		int numControllers = kinc_steam_getNumControllers();
+		for (DWORD i = 0; i < numControllers; ++i) // KINC_DINPUT_MAX_COUNT
 		{
-			int gamepadid = i; 
+			int gamepadid = i;
 			float newaxes[6];
 			for (int action = 0; action < 3; ++action) {
 				float x;

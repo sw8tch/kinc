@@ -132,24 +132,22 @@ void kinc_steam_inputaction()
 bool kinc_steam_update()
 {
 	//ISteamInput *steamInput = SteamInput();
-	if (!steamInput)
-		return false;
+    if (!steamInput)
+        return false;
 
     InputActionSetHandle_t actionset = SteamInput()->GetActionSetHandle("InGameControls");
 
-	kinc_steam_input_findcontroller();
-
-
-	kinc_steam_actions_register();
-	kinc_steam_axis_register();
+    kinc_steam_input_findcontroller();
+    kinc_steam_actions_register();
+    kinc_steam_axis_register();
 
     for (auto handle : m_ActiveControllerHandles) {
-		SteamInput()->ActivateActionSet(handle, actionset);
-	}
+        SteamInput()->ActivateActionSet(handle, actionset);
+    }
 
-	//SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
-	SteamAPI_RunCallbacks();
-	return true;
+    //SteamInput()->ActivateActionSet(m_ActiveControllerHandle, actionset);
+    SteamAPI_RunCallbacks();
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -193,7 +191,19 @@ void kinc_steam_getAnalogStatus(int gamepadid, int num, float *x, float *y) {
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Find an active Steam controller
+// Purpose: get connected controllers num
+//-----------------------------------------------------------------------------
+int kinc_steam_getNumControllers()
+{
+	if (!steamInput)
+		return -1;
+
+	return steamInput->GetConnectedControllers(pHandles);
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Find active Steam controllers
 //-----------------------------------------------------------------------------
 static void kinc_steam_input_findcontroller( )
 {
