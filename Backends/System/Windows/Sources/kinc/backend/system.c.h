@@ -1179,7 +1179,7 @@ bool kinc_internal_handle_messages() {
 			}
 			for (int i2 = 0; i2 < 6; ++i2) {
 				if (axes[i * 6 + i2] != newaxes[i2]) {
-					kinc_internal_gamepad_trigger_axis(gamepadid, i2, newaxes[i2], newaxes[i2]);
+					kinc_internal_gamepad_trigger_axis(gamepadid, i2, newaxes[i2]);
 					axes[i * 6 + i2] = newaxes[i2];
 				}
 			}
