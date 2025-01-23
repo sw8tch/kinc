@@ -24,6 +24,7 @@ KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_rotation_x(float alpha);
 KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_rotation_y(float alpha);
 KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_rotation_z(float alpha);
 KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_translation(float x, float y);
+KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_scale(float x, float y, float z);
 KINC_FUNC kinc_matrix3x3_t kinc_matrix3x3_multiply(kinc_matrix3x3_t *a, kinc_matrix3x3_t *b);
 KINC_FUNC kinc_vector3_t kinc_matrix3x3_multiply_vector(kinc_matrix3x3_t *a, kinc_vector3_t b);
 
@@ -35,7 +36,13 @@ KINC_FUNC float kinc_matrix4x4_get(kinc_matrix4x4_t *matrix, int x, int y);
 KINC_FUNC void kinc_matrix4x4_set(kinc_matrix4x4_t *matrix, int x, int y, float value);
 KINC_FUNC void kinc_matrix4x4_transpose(kinc_matrix4x4_t *matrix);
 KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_identity(void);
+KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_rotation_x(float alpha);
+KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_rotation_y(float alpha);
+KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_rotation_z(float alpha);
+KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_translation(float x, float y, float z);
+KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_scale(float x, float y, float z);
 KINC_FUNC kinc_matrix4x4_t kinc_matrix4x4_multiply(kinc_matrix4x4_t *a, kinc_matrix4x4_t *b);
+KINC_FUNC kinc_vector4_t kinc_matrix4x4_multiply_vector(kinc_matrix4x4_t *a, kinc_vector4_t b);
 
 #ifdef KINC_IMPLEMENTATION_MATH
 #define KINC_IMPLEMENTATION
@@ -121,6 +128,14 @@ kinc_matrix3x3_t kinc_matrix3x3_translation(float x, float y) {
 	return m;
 }
 
+kinc_matrix3x3_t kinc_matrix3x3_scale(float x, float y, float z) {
+	kinc_matrix3x3_t m = kinc_matrix3x3_identity();
+	kinc_matrix3x3_set(&m, 0, 0, x);
+	kinc_matrix3x3_set(&m, 1, 1, y);
+	kinc_matrix3x3_set(&m, 2, 2, z);
+	return m;
+}
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wconditional-uninitialized"
 #endif
@@ -188,6 +203,55 @@ kinc_matrix4x4_t kinc_matrix4x4_identity(void) {
 	return m;
 }
 
+kinc_matrix4x4_t kinc_matrix4x4_rotation_x(float alpha) {
+	kinc_matrix4x4_t m = kinc_matrix4x4_identity();
+	float ca = cosf(alpha);
+	float sa = sinf(alpha);
+	kinc_matrix4x4_set(&m, 1, 1, ca);
+	kinc_matrix4x4_set(&m, 2, 1, -sa);
+	kinc_matrix4x4_set(&m, 1, 2, sa);
+	kinc_matrix4x4_set(&m, 2, 2, ca);
+	return m;
+}
+
+kinc_matrix4x4_t kinc_matrix4x4_rotation_y(float alpha) {
+	kinc_matrix4x4_t m = kinc_matrix4x4_identity();
+	float ca = cosf(alpha);
+	float sa = sinf(alpha);
+	kinc_matrix4x4_set(&m, 0, 0, ca);
+	kinc_matrix4x4_set(&m, 2, 0, sa);
+	kinc_matrix4x4_set(&m, 0, 2, -sa);
+	kinc_matrix4x4_set(&m, 2, 2, ca);
+	return m;
+}
+
+kinc_matrix4x4_t kinc_matrix4x4_rotation_z(float alpha) {
+	kinc_matrix4x4_t m = kinc_matrix4x4_identity();
+	float ca = cosf(alpha);
+	float sa = sinf(alpha);
+	kinc_matrix4x4_set(&m, 0, 0, ca);
+	kinc_matrix4x4_set(&m, 1, 0, -sa);
+	kinc_matrix4x4_set(&m, 0, 1, sa);
+	kinc_matrix4x4_set(&m, 1, 1, ca);
+	return m;
+}
+
+kinc_matrix4x4_t kinc_matrix4x4_translation(float x, float y, float z) {
+	kinc_matrix4x4_t m = kinc_matrix4x4_identity();
+	kinc_matrix4x4_set(&m, 3, 0, x);
+	kinc_matrix4x4_set(&m, 3, 1, y);
+	kinc_matrix4x4_set(&m, 3, 2, z);
+	return m;
+}
+
+kinc_matrix4x4_t kinc_matrix4x4_scale(float x, float y, float z) {
+	kinc_matrix4x4_t m = kinc_matrix4x4_identity();
+	kinc_matrix4x4_set(&m, 0, 0, x);
+	kinc_matrix4x4_set(&m, 1, 1, y);
+	kinc_matrix4x4_set(&m, 2, 2, z);
+	return m;
+}
+
 kinc_matrix4x4_t kinc_matrix4x4_multiply(kinc_matrix4x4_t *a, kinc_matrix4x4_t *b) {
 	kinc_matrix4x4_t result;
 	for (unsigned x = 0; x < 4; ++x)
@@ -199,6 +263,28 @@ kinc_matrix4x4_t kinc_matrix4x4_multiply(kinc_matrix4x4_t *a, kinc_matrix4x4_t *
 			kinc_matrix4x4_set(&result, x, y, t);
 		}
 	return result;
+}
+
+static float vector4_get(kinc_vector4_t vec, int index) {
+	float *values = (float *)&vec;
+	return values[index];
+}
+
+static void vector4_set(kinc_vector4_t *vec, int index, float value) {
+	float *values = (float *)vec;
+	values[index] = value;
+}
+
+kinc_vector4_t kinc_matrix4x4_multiply_vector(kinc_matrix4x4_t *a, kinc_vector4_t b) {
+	kinc_vector4_t product;
+	for (unsigned y = 0; y < 4; ++y) {
+		float t = 0;
+		for (unsigned x = 0; x < 4; ++x) {
+			t += kinc_matrix4x4_get(a, x, y) * vector4_get(b, x);
+		}
+		vector4_set(&product, y, t);
+	}
+	return product;
 }
 
 #endif

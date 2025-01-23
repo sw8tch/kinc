@@ -1116,9 +1116,8 @@ bool handleDirectInputPad(int padIndex) {
 }
 
 static bool isXInputGamepad(int gamepad) {
-	//if gamepad is greater than XInput max, treat it as DINPUT.
-	if (gamepad >= XUSER_MAX_COUNT)
-	{
+	// if gamepad is greater than XInput max, treat it as DINPUT.
+	if (gamepad >= XUSER_MAX_COUNT) {
 		return false;
 	}
 	XINPUT_STATE state;
@@ -1267,9 +1266,9 @@ bool kinc_internal_handle_messages() {
 				}
 			}
 			else {
-					if (handleDirectInputPad(i)) {
-						gamepadFound = true;
-					}
+				if (handleDirectInputPad(i)) {
+					gamepadFound = true;
+				}
 			}
 		}
 	}
@@ -1528,7 +1527,7 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	loadXInput();
 	initializeDirectInput();
 
-#ifdef KINC_KONG
+#if defined(KINC_KONG) && !defined(KOPE)
 	kong_init();
 #endif
 
