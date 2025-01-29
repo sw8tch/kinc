@@ -214,6 +214,11 @@ void kinc_framebuffer_options_set_defaults(kinc_framebuffer_options_t *frame) {
 	frame->samples_per_pixel = 1;
 }
 
+#if !defined(KINC_WINDOWS)
+void kinc_window_set_change_mode_callback(int window_index, void (*callback)(int mode)) {
+}
+#endif
+
 #endif
 
 #ifdef __cplusplus

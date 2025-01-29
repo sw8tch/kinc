@@ -622,6 +622,16 @@ int kinc_height(void) {
 void kinc_memory_emergency(void) {}
 #endif
 
+#if !defined(KINC_SWITCH)
+bool kinc_set_playernum(int newPlayerNum) {
+	return true;
+}
+
+int kinc_get_playernum() {
+	return 1;
+}
+#endif
+
 #if !defined(KINC_SONY) && !defined(KINC_SWITCH)
 static float safe_zone = 0.9f;
 

@@ -1330,9 +1330,6 @@ const char *kinc_system_id() {
 }
 
 
-bool kinc_set_playernum(int newPlayerNum){ return true;}
-int kinc_get_playernum(){return 1;}
-
 static bool co_initialized = false;
 
 void kinc_windows_co_initialize(void) {
