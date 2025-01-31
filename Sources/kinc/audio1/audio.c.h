@@ -18,12 +18,12 @@ static kinc_a1_channel_t channels[CHANNEL_COUNT];
 static kinc_a1_stream_channel_t streamchannels[CHANNEL_COUNT];
 static kinc_internal_video_channel_t videos[CHANNEL_COUNT];
 
-static float sampleLinear(int16_t *data, float position) {
+static float sampleLinear(int16_t *data, double position) {
 	int pos1 = (int)position;
 	int pos2 = (int)(position + 1);
 	float sample1 = data[pos1] / 32767.0f;
 	float sample2 = data[pos2] / 32767.0f;
-	float a = position - pos1;
+	float a = (float)(position - pos1);
 	return sample1 * (1 - a) + sample2 * a;
 }
 
@@ -164,7 +164,7 @@ kinc_a1_channel_t *kinc_a1_play_sound(kinc_a1_sound_t *sound, bool loop, float p
 				channels[i].position = 0;
 				channels[i].loop = loop;
 				channels[i].pitch = pitch;
-				channels[i].volume = sound->volume;
+				channels[i].volume = 1.0f;
 				channel = &channels[i];
 				break;
 			}
