@@ -1386,6 +1386,8 @@ void kinc_login(void) {}
 
 void kinc_unlock_achievement(int id) {}
 
+void kinc_gamepad_set_count(int count) {}
+
 bool kinc_gamepad_connected(int num) {
 	return isXInputGamepad(num) || isDirectInputGamepad(num);
 }
