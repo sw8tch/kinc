@@ -26,7 +26,7 @@ typedef struct {
 	void *ppiCallbackData;
 	bool (*closeCallback)(void *data);
 	void *closeCallbackData;
-	int (*fullscreenCallback)(int mode);
+	void (*fullscreenCallback)(int mode);
 } WindowData;
 
 LRESULT WINAPI KoreWindowsMessageProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -504,5 +504,4 @@ void kinc_internal_call_window_change_mode_callback(int window_index, int mode){
 	if (windows[window_index].fullscreenCallback != NULL) {
 		windows[window_index].fullscreenCallback(mode);
 	}
-	return -1;
 }

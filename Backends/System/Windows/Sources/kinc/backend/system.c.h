@@ -34,6 +34,7 @@ __itt_domain *kinc_itt_domain;
 #endif
 
 #ifdef KINC_USE_STEAM
+#include <kinc/service.h>
 #include <kinc/backend/steam.h>
 #endif
 
@@ -1167,7 +1168,7 @@ bool kinc_internal_handle_messages() {
 	if (use_steam_input) {
 		// m_ControllerActionSetHandles[0].
 		int numControllers = kinc_steam_getNumControllers();
-		for (DWORD i = 0; i < numControllers; ++i) // KINC_DINPUT_MAX_COUNT
+		for (int i = 0; i < numControllers; ++i) // KINC_DINPUT_MAX_COUNT
 		{
 			int gamepadid = i;
 			float newaxes[6];
@@ -1190,7 +1191,7 @@ bool kinc_internal_handle_messages() {
 				newbuttons[action] = (kinc_steam_getDigitalStatus(gamepadid, action)) ? 1.0f : 0.0f;
 			}
 
-			WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0], newaxes[1]);
+			int64_t digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0], newaxes[1]);
 			newbuttons[12] = ((kinc_steam_getDigitalStatus(gamepadid, 12)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP)) ? 1.0f : 0.0f;
 			newbuttons[13] = ((kinc_steam_getDigitalStatus(gamepadid, 13)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
 			newbuttons[14] = ((kinc_steam_getDigitalStatus(gamepadid, 14)) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
@@ -1251,7 +1252,7 @@ bool kinc_internal_handle_messages() {
 				newbuttons[14] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1.0f : 0.0f;
 				newbuttons[15] = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1.0f : 0.0f;
 				*/
-				WORD digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
+				int64_t digitalStickMask = kinc_internal_gamepad_util_analogToDigital(newaxes[0],newaxes[1]);
 				newbuttons[12] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_UP) ) ? 1.0f : 0.0f;
 				newbuttons[13] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_DOWN)) ? 1.0f : 0.0f;
 				newbuttons[14] = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) || (digitalStickMask & XINPUT_GAMEPAD_DPAD_LEFT)) ? 1.0f : 0.0f;
@@ -1495,7 +1496,8 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	if (!kinc_service_init())
 	{
 		kinc_internal_shutdown();
-		return;
+		// FIXME: kinc_init() is not supposed to fail
+		return -1;
 	}
 	//kinc_steam_actions_register();
 #endif
