@@ -1,6 +1,0 @@
-#ifndef KOPE_VULKAN_UNIT_HEADER
-#define KOPE_VULKAN_UNIT_HEADER
-
-
-
-#endif
