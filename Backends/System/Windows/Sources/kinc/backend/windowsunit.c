@@ -128,3 +128,7 @@ enum tagPOINTER_INPUT_TYPE {
 #if defined(KINC_USE_STEAM)
 #define KINC_IMPLEMENTATION_STEAM
 #endif
+
+#if defined(KINC_USE_MSSTORE)
+#define KINC_IMPLEMENTATION_MSSTORE
+#endif

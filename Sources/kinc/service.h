@@ -22,6 +22,11 @@ KINC_FUNC int kinc_service_init();
 /// <summary>
 /// </summary>
 /// <returns></returns>
+KINC_FUNC void kinc_service_login();
+
+/// <summary>
+/// </summary>
+/// <returns></returns>
 KINC_FUNC void kinc_service_update();
 
 /// <summary>
@@ -34,6 +39,12 @@ KINC_FUNC void kinc_service_shutdown();
 /// </summary>
 /// <returns></returns>
 KINC_FUNC void kinc_service_set_achievement(char const *name);
+
+/// <summary>
+/// Set an achievement as unlocked into the service
+/// </summary>
+/// <returns></returns>
+KINC_FUNC void kinc_service_set_achievementByID(int id);
 
 /// <summary>
 /// </summary>
@@ -61,9 +72,13 @@ KINC_FUNC bool kinc_service_get_achievement(char const *achName, struct kinc_ach
 
 #ifdef KINC_IMPLEMENTATION
 
-#if !defined(KINC_USE_STEAM)
+#if !defined(KINC_USE_STEAM) && !defined(KINC_USE_MSSTORE)
 int kinc_service_init() {
 	return 1;
+}
+
+void kinc_service_login() {
+
 }
 
 void kinc_service_update()
@@ -76,6 +91,9 @@ void kinc_service_shutdown() {
 void kinc_service_set_achievement(char const *name) {
 }
 
+void kinc_service_set_achievementByID(int id){
+	
+}
 void kinc_service_set_rich_presence(char const *key, char const *value) {
 }
 

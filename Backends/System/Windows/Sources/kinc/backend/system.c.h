@@ -38,6 +38,11 @@ __itt_domain *kinc_itt_domain;
 #include <kinc/backend/steam.h>
 #endif
 
+#ifdef KINC_USE_MSSTORE
+#include <kinc/service.h>
+#include <kinc/backend/msstore.h>
+#endif
+
 #ifdef KORE_G4ONG5
 #define Graphics Graphics5
 #elif KINC_G4
@@ -1385,7 +1390,11 @@ const char **kinc_video_formats() {
 
 void kinc_login(void) {}
 
-void kinc_unlock_achievement(int id) {}
+void kinc_unlock_achievement(int id) {
+#if _GAMING_DESKTOP
+	kinc_service_set_achievementByID(id);
+#endif
+}
 
 bool kinc_gamepad_connected(int num) {
 	return isXInputGamepad(num) || isDirectInputGamepad(num);
@@ -1490,7 +1499,7 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 
 	kinc_display_init();
 
-#ifdef KINC_USE_STEAM
+#if defined(KINC_USE_STEAM) || defined(KINC_USE_MSSTORE)
 	if (!kinc_service_init())
 	{
 		kinc_internal_shutdown();
@@ -1499,6 +1508,7 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 	}
 	//kinc_steam_actions_register();
 #endif
+
 
 	QueryPerformanceCounter(&startCount);
 	QueryPerformanceFrequency(&frequency);
