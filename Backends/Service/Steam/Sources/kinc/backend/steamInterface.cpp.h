@@ -51,8 +51,7 @@ InputHandle_t m_ActiveControllerHandles[STEAM_INPUT_MAX_COUNT];
 ControllerHandle_t pHandles[STEAM_INPUT_MAX_COUNT];
 ISteamInput *steamInput;
 
-int kinc_service_init()
-{
+int kinc_service_init(){
 	SteamAPI_RestartAppIfNecessary(STEAMAPPID);
 	if (!SteamAPI_Init()) {
 		return 0;
@@ -75,14 +74,14 @@ int kinc_service_init()
 	return 1;
 }
 
-void kinc_service_update()
-{
+void kinc_service_update(){
 	g_SteamAchievements->Update();
 	//g_SteamAchievements->UnlockAchievement(g_Achievements[0]);
 }
 
-void kinc_service_shutdown()
-{
+void kinc_service_login(){}
+
+void kinc_service_shutdown(){
 	SteamAPI_Shutdown();
 }
 
