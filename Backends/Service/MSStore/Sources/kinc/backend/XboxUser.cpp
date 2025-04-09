@@ -62,7 +62,7 @@ void initXboxUser() {
 	}
 
 	XblInitArgs xblArgs = {};
-	xblArgs.scid = "00000000-0000-0000-0000-000068bf7621";
+	xblArgs.scid = MSSCID;
 	XblInitialize(&xblArgs);
 }
 

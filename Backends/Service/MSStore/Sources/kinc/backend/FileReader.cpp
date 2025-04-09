@@ -27,7 +27,7 @@ Microsoft::Xbox::Wrappers::GameSave::Provider *currentStorage = nullptr;
 bool initXboxStorage(XUserHandle user) {
 	Microsoft::Xbox::Wrappers::GameSave::Provider *provider = nullptr;
 	provider = new Microsoft::Xbox::Wrappers::GameSave::Provider();
-	HRESULT result = provider->Initialize(user, "00000000-0000-0000-0000-000068bf7621");
+	HRESULT result = provider->Initialize(user, MSSCID);
 	if (result == S_OK) {
 		currentStorage = provider;
 		kinc_event_signal(&kinc_internal_xbox_storage_initialized);
