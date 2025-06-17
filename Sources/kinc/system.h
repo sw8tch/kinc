@@ -153,10 +153,21 @@ KINC_FUNC void kinc_stop(void);
 KINC_FUNC void kinc_login(void);
 
 /// <summary>
+/// Gets the current save path mounted on host platform.
+/// </summary>
+KINC_FUNC const char *kinc_get_save_path(void);
+
+/// <summary>
 /// Returns true if kinc_login was called and the login-process is still ongoing.
 /// </summary>
 /// <returns>Whether a login-process is still in progress</returns>
 KINC_FUNC bool kinc_waiting_for_login(void);
+
+/// <summary>
+/// Returns true if save storage is being mounted and the process is still ongoing.
+/// </summary>
+/// <returns>Whether a save storage mount is still in progress</returns>
+KINC_FUNC bool kinc_waiting_for_save_storage(void);
 
 /// <summary>
 /// Unlocks an achievement or trophy or however you prefer to call it.
@@ -695,7 +706,12 @@ uint8_t *kinc_get_save_file(void) {
 size_t kinc_get_save_file_size(void) {
 	return current_file_size;
 }
+#if !defined(KINC_USE_XBL) && !defined(KINC_USE_MSSTORE)
 
+const char *kinc_get_save_path(void) {
+	return "";
+}
+#endif
 void kinc_load_save_file(const char *filename) {
 	free(current_file);
 	current_file = NULL;
@@ -723,7 +739,11 @@ bool kinc_save_is_saving(void) {
 }
 
 bool kinc_waiting_for_login(void) {
-	return false;
+	return kinc_service_waiting_for_login();
+}
+
+bool kinc_waiting_for_save_storage(void) {
+	return kinc_service_waiting_for_save_storage();
 }
 
 #if !defined(KINC_WINDOWS) && !defined(KINC_LINUX) && !defined(KINC_MACOS)

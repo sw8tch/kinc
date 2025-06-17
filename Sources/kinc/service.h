@@ -34,6 +34,19 @@ KINC_FUNC void kinc_service_update();
 /// <returns></returns>
 KINC_FUNC void kinc_service_shutdown();
 
+
+/// <summary>
+/// Returns true if kinc_login was called and the login-process is still ongoing.
+/// </summary>
+/// <returns>Whether a login-process is still in progress</returns>
+KINC_FUNC bool kinc_service_waiting_for_login(void);
+
+/// <summary>
+/// Returns true if save storage is being mounted and the process is still ongoing.
+/// </summary>
+/// <returns>Whether a save storage mount is still in progress</returns>
+KINC_FUNC bool kinc_service_waiting_for_save_storage(void);
+
 /// <summary>
 /// Set an achievement as unlocked into the service
 /// </summary>
@@ -72,7 +85,7 @@ KINC_FUNC bool kinc_service_get_achievement(char const *achName, struct kinc_ach
 
 #ifdef KINC_IMPLEMENTATION
 
-#if !defined(KINC_USE_STEAM) && !defined(KINC_USE_MSSTORE)
+#if !defined(KINC_USE_STEAM) && !defined(KINC_USE_MSSTORE) && !defined(KINC_USE_XBL)
 int kinc_service_init() {
 	return 1;
 }
@@ -86,6 +99,13 @@ void kinc_service_update()
 
 }
 void kinc_service_shutdown() {
+}
+
+bool kinc_service_waiting_for_login(void) {
+	return false;
+}
+bool kinc_service_waiting_for_save_storage(void) {
+	return false;
 }
 
 void kinc_service_set_achievement(char const *name) {

@@ -21,7 +21,11 @@
 #include <XStore.h>
 #include <xsapi-c/services_c.h>
 
+#include "XGameSaveFiles.h"
 
+#include <cstdlib>
+#include <cstring>
+#include <stdio.h>
 
 static kinc_mutex_t mutex;
 
@@ -36,6 +40,8 @@ static volatile int32_t waiting_for_account_picker = 0;
 static volatile int32_t waiting_for_save_storage = 0;
 
 bool initXboxStorage(XUserHandle user);
+// bool initXboxStorageWin32IO(XUserHandle user);
+void GetContainerPath(char *containerPathBuffer);
 
 extern "C" void kinc_internal_login_callback();
 extern "C" void kinc_internal_logout_callback();
@@ -78,6 +84,10 @@ void initXboxUser() {
 	xblArgs.scid = c_scid;
 	XblInitialize(&xblArgs);
 }
+void closeUserHandle()
+{
+	XUserCloseHandle(currentUser);
+}
 
 void checkXboxUser() {
 	if (logged_in) {
@@ -117,6 +127,13 @@ void GetContainerPath(char *containerPathBuffer) {
 	}
 }
 
+const char *kinc_get_save_path(void) {
+	static char savepath[MAX_PATH]{};
+	GetContainerPath(savepath);
+	kinc_log(KINC_LOG_LEVEL_INFO, "Save path is : %s", savepath);
+	return savepath;
+}
+
 bool initXboxStorageWin32IO(XUserHandle user) {
 	KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 1);
 	XAsyncBlock *asyncBlock = new XAsyncBlock;
@@ -125,31 +142,32 @@ bool initXboxStorageWin32IO(XUserHandle user) {
 	asyncBlock->queue = nullptr;
 	asyncBlock->context = nullptr;
 	asyncBlock->callback = [](XAsyncBlock *asyncBlock) {
-		XAsyncBlock *owner = new XAsyncBlock;
-		ZeroMemory(owner, sizeof(*owner));
-
 		size_t folderSize = 0;
-		XAsyncGetResultSize(asyncBlock, &folderSize);
-		char folderResult[MAX_PATH]{};
-		HRESULT hr = XGameSaveFilesGetFolderWithUiResult(asyncBlock, folderSize, folderResult);
+		HRESULT hrsize = XAsyncGetResultSize(asyncBlock, &folderSize);
+		
+		if (SUCCEEDED(hrsize)) {
+			char folderResult[MAX_PATH]{};
+			HRESULT hr = XGameSaveFilesGetFolderWithUiResult(asyncBlock, folderSize, folderResult);
 
-		if (SUCCEEDED(hr)) {
-			kinc_log(KINC_LOG_LEVEL_INFO, "XGameSaveFilesGetFolderWithUiResult successful");
-			kinc_log(KINC_LOG_LEVEL_INFO, "Game save Dir : %s", folderResult);
-			strcpy(saveFolderPath, folderResult);
-			kinc_event_signal(&kinc_internal_xbox_storage_initialized);
-			KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 0);
+			if (SUCCEEDED(hr)) {
+				kinc_log(KINC_LOG_LEVEL_INFO, "XGameSaveFilesGetFolderWithUiResult successful");
+				kinc_log(KINC_LOG_LEVEL_INFO, "Game save Dir : %s", folderResult);
+				strcpy(saveFolderPath, folderResult);
+				kinc_event_signal(&kinc_internal_xbox_storage_initialized);
+				KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 0);
+			}
+			else {
+				kinc_log(KINC_LOG_LEVEL_ERROR, "XGameSaveFilesGetFolderWithUiResult successful");
+			}
 		}
-		else {
-			kinc_log(KINC_LOG_LEVEL_ERROR, "XGameSaveFilesGetFolderWithUiResult successful");
-		}
-		delete asyncBlock;
+		//delete asyncBlock;
 	};
 
 	HRESULT hr = XGameSaveFilesGetFolderWithUiAsync(user, c_scid, asyncBlock);
 
 	if (SUCCEEDED(hr)) {
-		// delete asyncBlock;
+		kinc_log(KINC_LOG_LEVEL_INFO, "XGameSaveFilesGetFolderWithUiAsync callback is set.");
+		//delete asyncBlock;
 	}
 	else {
 		kinc_log(KINC_LOG_LEVEL_ERROR, "XGameSaveFilesGetFolderWithUiAsync");
@@ -160,6 +178,7 @@ bool initXboxStorageWin32IO(XUserHandle user) {
 
 void kinc_service_login() {
 	KINC_ATOMIC_EXCHANGE_32(&waiting_for_account_picker, 1);
+	KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 1);
 
 	XAsyncBlock *asyncBlock = new XAsyncBlock;
 	ZeroMemory(asyncBlock, sizeof(*asyncBlock));
@@ -184,15 +203,18 @@ void kinc_service_login() {
 				}
 			}
 
-			if (!wrongUser && initXboxStorageWin32IO(user)) {
+			//if (!wrongUser && initXboxStorage(user)) {
+			if (!wrongUser ) {
 				currentUser = user;
 				XblContextHandle context = nullptr;
 				result = XblContextCreateHandle(user, &context);
 				if (result == S_OK) {
 					currentContext = context;
 				}
-				kinc_log(KINC_LOG_LEVEL_INFO, "User Logged in");
+				kinc_log(KINC_LOG_LEVEL_INFO, "Kinc XBLiveServices : User Logged in");
+				
 				KINC_ATOMIC_EXCHANGE_32(&waiting_for_account_picker, 0);
+				initXboxStorageWin32IO(user);
 			}
 			else {
 				kinc_service_login();
@@ -203,8 +225,11 @@ void kinc_service_login() {
 		}
 	};
 
-	XUserAddAsync(XUserAddOptions::AddDefaultUserAllowingUI, asyncBlock);
+	XUserAddAsync(XUserAddOptions::AddDefaultUserAllowingUI, asyncBlock); // XUserAddOptions::AddDefaultUserAllowingUI
 }
+
+
+
 
 void kinc_service_disallow_user_change() {
 	favoriteUser = currentUser;

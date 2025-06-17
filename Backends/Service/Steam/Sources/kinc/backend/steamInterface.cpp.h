@@ -85,6 +85,13 @@ void kinc_service_shutdown(){
 	SteamAPI_Shutdown();
 }
 
+bool kinc_service_waiting_for_login() {
+	return false;
+}
+bool kinc_service_waiting_for_save_storage() {
+	return false;
+}
+
 static void kinc_steam_actions_register() {
 	//ISteamInput *steamInput = SteamInput();
 	if (!steamInput)

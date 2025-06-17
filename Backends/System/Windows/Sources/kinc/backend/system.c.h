@@ -38,9 +38,9 @@ __itt_domain *kinc_itt_domain;
 #include <kinc/backend/steam.h>
 #endif
 
-#ifdef KINC_USE_MSSTORE
+#ifdef KINC_USE_MSSTORE || KINC_USE_XBL
 #include <kinc/service.h>
-#include <kinc/backend/msstore.h>
+#include <kinc/backend/XBLiveServices.h>
 #endif
 
 #ifdef KORE_G4ONG5
@@ -1388,7 +1388,9 @@ const char **kinc_video_formats() {
 	return videoFormats;
 }
 
-void kinc_login(void) {}
+void kinc_login(void) {
+	kinc_service_login();
+}
 
 void kinc_unlock_achievement(int id) {
 #if _GAMING_DESKTOP
@@ -1499,7 +1501,7 @@ int kinc_init(const char *name, int width, int height, kinc_window_options_t *wi
 
 	kinc_display_init();
 
-#if defined(KINC_USE_STEAM) || defined(KINC_USE_MSSTORE)
+#if defined(KINC_USE_STEAM) || defined(KINC_USE_MSSTORE) || defined(KINC_USE_XBL)
 	if (!kinc_service_init())
 	{
 		kinc_internal_shutdown();
