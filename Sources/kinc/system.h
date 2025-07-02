@@ -82,6 +82,20 @@ KINC_FUNC bool kinc_set_playernum(int newPlayerNum);
 KINC_FUNC int kinc_get_playernum();
 
 /// <summary>
+/// ensure that a certain number of gamepads are connected.
+/// </summary>
+/// <param name="numpads">Number of gamepads needed</param>
+/// <param name="showSystemDialog">wether to show a system dialog if not enough pads are found</param>
+/// <returns> bool true if the required numpads meets the needed gamepads</returns>
+KINC_FUNC bool kinc_ensure_playernum(int numpads, bool showSystemDialog);
+
+/// <summary>
+/// Get the username of current player registered on the service
+/// </summary>
+/// <returns>the username</returns>
+KINC_FUNC char const *kinc_get_username(int playerid);
+
+/// <summary>
 /// Vibrates the whole system if supported. This is primarily supported on mobile phones but don't blame us if your computer falls over.
 /// </summary>
 KINC_FUNC void kinc_vibrate(int milliseconds);
@@ -311,6 +325,20 @@ KINC_FUNC void kinc_set_login_callback(void (*callback)(void *), void *data);
 /// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
 KINC_FUNC void kinc_set_logout_callback(void (*callback)(void *), void *data);
 
+/// <summary>
+/// Sets a callback which is called when a save drive is mounted.
+/// </summary>
+/// <param name="callback">The save mounted-callback</param>
+/// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
+KINC_FUNC void kinc_set_save_mounted_callback(void (*callback)(void *), void *data);
+
+/// <summary>
+/// Sets a callback which is called when a save drive is unmounted.
+/// </summary>
+/// <param name="callback">The save unmounted-callback</param>
+/// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
+KINC_FUNC void kinc_set_save_unmounted_callback(void (*callback)(void *), void *data);
+
 #ifdef KINC_VTUNE
 #include <ittnotify.h>
 
@@ -384,6 +412,8 @@ char *kinc_internal_copy_callback(void);
 void kinc_internal_paste_callback(char *);
 void kinc_internal_login_callback(void);
 void kinc_internal_logout_callback(void);
+void kinc_internal_save_mounted_callback(void);
+void kinc_internal_save_unmounted_callback(void);
 
 #ifdef KINC_IMPLEMENTATION_ROOT
 #define KINC_IMPLEMENTATION
@@ -437,6 +467,10 @@ static void (*login_callback)(void *) = NULL;
 static void *login_callback_data = NULL;
 static void (*logout_callback)(void *) = NULL;
 static void *logout_callback_data = NULL;
+static void (*save_mounted_callback)(void *) = NULL;
+static void *save_mounted_callback_data = NULL;
+static void (*save_unmounted_callback)(void *) = NULL;
+static void *save_unmounted_callback_data = NULL;
 
 #if defined(KINC_IOS) || defined(KINC_MACOS)
 bool withAutoreleasepool(bool (*f)(void));
@@ -500,6 +534,16 @@ void kinc_set_login_callback(void (*callback)(void *), void *data) {
 void kinc_set_logout_callback(void (*callback)(void *), void *data) {
 	logout_callback = callback;
 	logout_callback_data = data;
+}
+
+void kinc_set_save_mounted_callback(void (*callback)(void *), void *data) {
+	save_mounted_callback = callback;
+	save_mounted_callback_data = data;
+}
+
+void kinc_set_save_unmounted_callback(void (*callback)(void *), void *data) {
+	save_unmounted_callback = callback;
+	save_unmounted_callback_data = data;
 }
 
 void kinc_internal_update_callback(void) {
@@ -573,6 +617,18 @@ void kinc_internal_login_callback(void) {
 void kinc_internal_logout_callback(void) {
 	if (logout_callback != NULL) {
 		logout_callback(logout_callback_data);
+	}
+}
+
+void kinc_internal_save_mounted_callback(void) {
+	if (save_mounted_callback != NULL) {
+		save_mounted_callback(save_mounted_callback_data);
+	}
+}
+
+void kinc_internal_save_unmounted_callback(void) {
+	if (save_unmounted_callback != NULL) {
+		save_unmounted_callback(save_unmounted_callback_data);
 	}
 }
 

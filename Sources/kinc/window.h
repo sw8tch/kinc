@@ -202,7 +202,7 @@ void kinc_window_options_set_defaults(kinc_window_options_t *win) {
 	win->width = 800;
 	win->height = 600;
 	win->visible = true;
-	win->window_features = KINC_WINDOW_FEATURE_RESIZEABLE | KINC_WINDOW_FEATURE_MINIMIZABLE | KINC_WINDOW_FEATURE_MAXIMIZABLE;
+	win->window_features = KINC_WINDOW_FEATURE_RESIZEABLE | KINC_WINDOW_FEATURE_MINIMIZABLE | KINC_WINDOW_FEATURE_MAXIMIZABLE ; // | KINC_WINDOW_FEATURE_BORDERLESS;
 }
 
 void kinc_framebuffer_options_set_defaults(kinc_framebuffer_options_t *frame) {

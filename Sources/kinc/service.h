@@ -74,6 +74,13 @@ KINC_FUNC void kinc_service_clear_rich_presence();
 /// <returns></returns>
 KINC_FUNC char const *kinc_service_get_language();
 
+
+/// <summary>
+/// Get the username of current player registered on the service
+/// </summary>
+/// <returns>the username</returns>
+KINC_FUNC char const *kinc_service_get_username(int playerid);
+
 /// <summary>
 /// </summary>
 /// <returns></returns>
@@ -121,6 +128,11 @@ void kinc_service_clear_rich_presence() {
 }
 
 char const *kinc_service_get_language() {
+	static char const *empty = "";
+	return empty;
+}
+
+char const* kinc_service_get_username(int playerid) {
 	static char const *empty = "";
 	return empty;
 }

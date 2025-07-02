@@ -40,11 +40,13 @@ static volatile int32_t waiting_for_account_picker = 0;
 static volatile int32_t waiting_for_save_storage = 0;
 
 bool initXboxStorage(XUserHandle user);
-// bool initXboxStorageWin32IO(XUserHandle user);
+//bool initXboxStorageWin32IO(XUserHandle user);
 void GetContainerPath(char *containerPathBuffer);
 
 extern "C" void kinc_internal_login_callback();
 extern "C" void kinc_internal_logout_callback();
+extern "C" void kinc_internal_save_mounted_callback();
+extern "C" void kinc_internal_save_unmounted_callback();
 
 static bool logged_in = false;
 
@@ -52,15 +54,45 @@ static char c_scid[37] = "00000000-0000-0000-0000-0000" KINC_XBOX_TITLEID;
 static char saveFolderPath[MAX_PATH]{0};
 
 static void UserChangeEventHandler(void *context, XUserLocalId userLocalId, XUserChangeEvent event) {
+	// switch (event) {
+	//       case XUserChangeEvent::SignedOut:
+	//       case XUserChangeEvent::SigningOut:
+	//       case XUserChangeEvent::SignedInAgain:
+	//    default:
+	//	    break;
+
+	//   }
 	if (event == XUserChangeEvent::SignedOut) {
+
 		if (currentUser != nullptr) {
 			XUserLocalId currentUserId;
 			XUserGetLocalId(currentUser, &currentUserId);
 			if (currentUserId.value == userLocalId.value) {
 				kinc_event_reset(&kinc_internal_xbox_storage_initialized);
+
+				// need to change the savedir ? $$TODO$$ might need to implement callbacks here to inform upper layers about the change in save path...
+				// is the reset event enough ?
+				// initXboxStorageWin32IO(currentUser);
+
 				currentUser = nullptr;
+				kinc_internal_logout_callback();
 			}
 		}
+	}
+	else if (event == XUserChangeEvent::SigningOut) {
+		// Delay the user signing out just for fun
+		XUserSignOutDeferralHandle deferral;
+		if (SUCCEEDED(XUserGetSignOutDeferral(&deferral))) {
+			// Hold the deferral for 5 seconds then close it
+			XUserCloseSignOutDeferralHandle(deferral);
+			// std::thread completeDeferralThread([deferral]() {
+			//	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+			//	XUserCloseSignOutDeferralHandle(deferral);
+			// });
+			// completeDeferralThread.detach();
+		}
+	}
+	else if (event == XUserChangeEvent::SignedInAgain) {
 	}
 }
 
@@ -120,10 +152,10 @@ void GetContainerPath(char *containerPathBuffer) {
 	char lastChar = saveFolderPath[strlen(saveFolderPath) - 1];
 
 	if (lastChar == '\\') {
-		sprintf_s(containerPathBuffer, MAX_PATH, "%scontainer\\", saveFolderPath);
+		sprintf_s(containerPathBuffer, MAX_PATH, "%scontainer", saveFolderPath);
 	}
 	else {
-		sprintf_s(containerPathBuffer, MAX_PATH, "%s\\container\\", saveFolderPath);
+		sprintf_s(containerPathBuffer, MAX_PATH, "%s\\container", saveFolderPath);
 	}
 }
 
@@ -150,27 +182,28 @@ bool initXboxStorageWin32IO(XUserHandle user) {
 			HRESULT hr = XGameSaveFilesGetFolderWithUiResult(asyncBlock, folderSize, folderResult);
 
 			if (SUCCEEDED(hr)) {
-				kinc_log(KINC_LOG_LEVEL_INFO, "XGameSaveFilesGetFolderWithUiResult successful");
-				kinc_log(KINC_LOG_LEVEL_INFO, "Game save Dir : %s", folderResult);
+				kinc_log(KINC_LOG_LEVEL_INFO, "Kinc : XGameSaveFilesGetFolderWithUiResult successful");
+				kinc_log(KINC_LOG_LEVEL_INFO, "Kinc : Game save Dir : %s", folderResult);
 				strcpy(saveFolderPath, folderResult);
 				kinc_event_signal(&kinc_internal_xbox_storage_initialized);
+				kinc_internal_save_mounted_callback();
 				KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 0);
 			}
 			else {
-				kinc_log(KINC_LOG_LEVEL_ERROR, "XGameSaveFilesGetFolderWithUiResult successful");
+				kinc_log(KINC_LOG_LEVEL_ERROR, "Kinc : XGameSaveFilesGetFolderWithUiResult successful");
 			}
 		}
-		//delete asyncBlock;
+		delete asyncBlock; 
 	};
 
 	HRESULT hr = XGameSaveFilesGetFolderWithUiAsync(user, c_scid, asyncBlock);
 
 	if (SUCCEEDED(hr)) {
-		kinc_log(KINC_LOG_LEVEL_INFO, "XGameSaveFilesGetFolderWithUiAsync callback is set.");
+		kinc_log(KINC_LOG_LEVEL_INFO, "Kinc : XGameSaveFilesGetFolderWithUiAsync callback is set.");
 		//delete asyncBlock;
 	}
 	else {
-		kinc_log(KINC_LOG_LEVEL_ERROR, "XGameSaveFilesGetFolderWithUiAsync");
+		kinc_log(KINC_LOG_LEVEL_ERROR, "Kinc : XGameSaveFilesGetFolderWithUiAsync");
 		return false;
 	}
 	return true;
@@ -206,12 +239,15 @@ void kinc_service_login() {
 			//if (!wrongUser && initXboxStorage(user)) {
 			if (!wrongUser ) {
 				currentUser = user;
-				XblContextHandle context = nullptr;
+				uint64_t userId;
+				XUserGetId(user, &userId);
+				//kinc_log(KINC_LOG_LEVEL_INFO, "Kinc XBLiveServices : User is %llx",userId);
+                XblContextHandle context = nullptr;
 				result = XblContextCreateHandle(user, &context);
 				if (result == S_OK) {
 					currentContext = context;
 				}
-				kinc_log(KINC_LOG_LEVEL_INFO, "Kinc XBLiveServices : User Logged in");
+				kinc_log(KINC_LOG_LEVEL_INFO, "Kinc XBLiveServices : User \"%llu\" Logged in",userId);
 				
 				KINC_ATOMIC_EXCHANGE_32(&waiting_for_account_picker, 0);
 				initXboxStorageWin32IO(user);
@@ -225,7 +261,8 @@ void kinc_service_login() {
 		}
 	};
 
-	XUserAddAsync(XUserAddOptions::AddDefaultUserAllowingUI, asyncBlock); // XUserAddOptions::AddDefaultUserAllowingUI
+	XUserAddAsync(XUserAddOptions::AddDefaultUserAllowingUI,asyncBlock); 
+    // XUserAddOptions::AddDefaultUserAllowingUI //XUserAddOptions::AddDefaultUserAllowingUI,
 }
 
 
@@ -281,4 +318,12 @@ void kinc_service_unlock_achievement(int id) {
 			kinc_log(KINC_LOG_LEVEL_WARNING, "Could not unlock achievement.");
 		}
 	}
+}
+
+const char* getClassicGamerTag() {
+	XUserGetGamertag currentGamerTag;
+	size_t* gamertagSize;
+	static char *foundGamerTag;
+	XUserGetGamertag(currentUser, XUserGamertagComponent::Classic, XUserGamertagComponentClassicMaxBytes, foundGamerTag, &gamertagSize);
+	return foundGamerTag;
 }
