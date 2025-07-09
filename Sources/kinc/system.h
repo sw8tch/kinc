@@ -689,7 +689,7 @@ int kinc_height(void) {
 void kinc_memory_emergency(void) {}
 #endif
 
-#if !defined(KINC_SWITCH)
+#if !defined(KINC_SWITCH) && !defined(KINC_CONSOLE)
 bool kinc_set_playernum(int newPlayerNum) {
 	return true;
 }
