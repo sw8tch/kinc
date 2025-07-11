@@ -339,6 +339,20 @@ KINC_FUNC void kinc_set_save_mounted_callback(void (*callback)(void *), void *da
 /// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
 KINC_FUNC void kinc_set_save_unmounted_callback(void (*callback)(void *), void *data);
 
+/// <summary>
+/// Sets a callback when the ensure player num fails.
+/// </summary>
+/// <param name="callback">The ensure failed-callback</param>
+/// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
+KINC_FUNC void kinc_set_controller_ensure_failed_callback(void (*callback)(int, int,void *), void *data);
+
+/// <summary>
+/// Sets a callback when the ensure player num check is restored .
+/// </summary>
+/// <param name="callback">The ensure restore-callback</param>
+/// <param name="data">Arbitrary data-pointer that's passed to the callback</param>
+KINC_FUNC void kinc_set_controller_ensure_restored_callback(void (*callback)(void *), void *data);
+
 #ifdef KINC_VTUNE
 #include <ittnotify.h>
 
@@ -414,6 +428,8 @@ void kinc_internal_login_callback(void);
 void kinc_internal_logout_callback(void);
 void kinc_internal_save_mounted_callback(void);
 void kinc_internal_save_unmounted_callback(void);
+void kinc_internal_controller_ensure_failed(int needded, int current);
+void kinc_internal_controller_ensure_restored();
 
 #ifdef KINC_IMPLEMENTATION_ROOT
 #define KINC_IMPLEMENTATION
@@ -471,6 +487,10 @@ static void (*save_mounted_callback)(void *) = NULL;
 static void *save_mounted_callback_data = NULL;
 static void (*save_unmounted_callback)(void *) = NULL;
 static void *save_unmounted_callback_data = NULL;
+static void (*controller_ensure_failed_callback)(int, int, void *) = NULL;
+static void *controller_ensure_failed_callback_data = NULL;
+static void (*controller_ensure_restored_callback)(void *) = NULL;
+static void *controller_ensure_restored_callback_data = NULL;
 
 #if defined(KINC_IOS) || defined(KINC_MACOS)
 bool withAutoreleasepool(bool (*f)(void));
@@ -544,6 +564,15 @@ void kinc_set_save_mounted_callback(void (*callback)(void *), void *data) {
 void kinc_set_save_unmounted_callback(void (*callback)(void *), void *data) {
 	save_unmounted_callback = callback;
 	save_unmounted_callback_data = data;
+}
+
+void kinc_set_controller_ensure_failed_callback(void (*callback)(int, int, void *), void *data) {
+	controller_ensure_failed_callback = callback;
+	controller_ensure_failed_callback_data = data;
+}
+void kinc_set_controller_ensure_restored_callback(void (*callback)( void *), void *data) {
+	controller_ensure_restored_callback = callback;
+	controller_ensure_restored_callback_data = data;
 }
 
 void kinc_internal_update_callback(void) {
@@ -632,6 +661,18 @@ void kinc_internal_save_unmounted_callback(void) {
 	}
 }
 
+void kinc_internal_controller_ensure_failed_callback(int needed , int current ) {
+	if (controller_ensure_failed_callback != NULL) {
+		controller_ensure_failed_callback(needed, current, controller_ensure_failed_callback_data);
+	}
+}
+
+void kinc_internal_controller_ensure_restored_callback() {
+	if (controller_ensure_restored_callback != NULL) {
+		controller_ensure_restored_callback(controller_ensure_restored_callback_data);
+	}
+}
+
 static bool running = false;
 // static bool showWindowFlag = true;
 static char application_name[1024] = {"Kinc Application"};
@@ -696,6 +737,9 @@ bool kinc_set_playernum(int newPlayerNum) {
 
 int kinc_get_playernum() {
 	return 1;
+}
+bool kinc_ensure_playernum(int numpads, bool showSystemDialog) {
+	return true;
 }
 #endif
 
@@ -800,6 +844,10 @@ bool kinc_waiting_for_login(void) {
 
 bool kinc_waiting_for_save_storage(void) {
 	return kinc_service_waiting_for_save_storage();
+}
+
+const char* kinc_get_username(int playerid) {
+	return kinc_service_get_username(playerid);
 }
 
 #if !defined(KINC_WINDOWS) && !defined(KINC_LINUX) && !defined(KINC_MACOS)
