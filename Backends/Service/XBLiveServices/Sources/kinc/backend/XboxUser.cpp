@@ -19,6 +19,7 @@
 #include <XLauncher.h>
 #include <XPackage.h>
 #include <XStore.h>
+#include <XUser.h>
 #include <xsapi-c/services_c.h>
 
 #include "XGameSaveFiles.h"
@@ -52,6 +53,7 @@ static bool logged_in = false;
 
 static char c_scid[37] = "00000000-0000-0000-0000-0000" KINC_XBOX_TITLEID;
 static char saveFolderPath[MAX_PATH]{0};
+static char currentGamertag[XUserGamertagComponentClassicMaxBytes + 1]{0};
 
 static void UserChangeEventHandler(void *context, XUserLocalId userLocalId, XUserChangeEvent event) {
 	// switch (event) {
@@ -166,6 +168,10 @@ const char *kinc_get_save_path(void) {
 	return savepath;
 }
 
+const char *kinc_service_get_username(int playerid) {
+	return currentGamertag;
+}
+
 bool initXboxStorageWin32IO(XUserHandle user) {
 	KINC_ATOMIC_EXCHANGE_32(&waiting_for_save_storage, 1);
 	XAsyncBlock *asyncBlock = new XAsyncBlock;
@@ -239,9 +245,9 @@ void kinc_service_login() {
 			//if (!wrongUser && initXboxStorage(user)) {
 			if (!wrongUser ) {
 				currentUser = user;
+				strcpy(currentGamertag, getClassicGamerTag());
 				uint64_t userId;
 				XUserGetId(user, &userId);
-				//kinc_log(KINC_LOG_LEVEL_INFO, "Kinc XBLiveServices : User is %llx",userId);
                 XblContextHandle context = nullptr;
 				result = XblContextCreateHandle(user, &context);
 				if (result == S_OK) {
@@ -321,9 +327,10 @@ void kinc_service_unlock_achievement(int id) {
 }
 
 const char* getClassicGamerTag() {
-	XUserGetGamertag currentGamerTag;
-	size_t* gamertagSize;
-	static char *foundGamerTag;
+	// XUserGetGamertag currentGamerTag = new XUserGetGamertag();
+	size_t gamertagSize = 0;
+	static char foundGamerTag[XUserGamertagComponentClassicMaxBytes + 1];
+
 	XUserGetGamertag(currentUser, XUserGamertagComponent::Classic, XUserGamertagComponentClassicMaxBytes, foundGamerTag, &gamertagSize);
 	return foundGamerTag;
 }

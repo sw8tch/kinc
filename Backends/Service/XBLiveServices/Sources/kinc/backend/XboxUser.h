@@ -8,7 +8,7 @@ void ensureXboxUser();
 void checkXboxUser();
 void changeXboxUser();
 void closeUserHandle();
-
+const char *getClassicGamerTag();
 void kinc_service_unlock_achievement(int id);
 
 namespace Microsoft {
